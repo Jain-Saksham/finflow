@@ -25,7 +25,12 @@ function PaymentSimulator({ order }: { order: Order }) {
       {
         onSuccess: () => setIdempotencyKey(newIdempotencyKey()),
         onError: (err) => {
-          if (err instanceof ApiError && err.status > 0) setIdempotencyKey(newIdempotencyKey());
+          // Keep the key when the outcome is unknown (network error, 5xx, still in progress): retrying
+          // with it returns the original payment instead of charging again. A definite 4xx rejection
+          // created nothing, so the next attempt gets a new key.
+          const keep = !(err instanceof ApiError) || err.status === 0 || err.status >= 500
+            || err.code === 'IDEMPOTENCY_REQUEST_IN_PROGRESS';
+          if (!keep) setIdempotencyKey(newIdempotencyKey());
         },
       },
     );
@@ -76,6 +81,7 @@ function PaymentSimulator({ order }: { order: Order }) {
                   ))}
                 </div>
               </div>
+              <span className="faint mono" style={{ fontSize: 11.5 }}>Idempotency-Key {idempotencyKey.slice(0, 13)}…</span>
               <button className="btn btn-primary" disabled={createPayment.isPending}>
                 {createPayment.isPending && <span className="spinner" />}
                 {createPayment.isPending ? 'Contacting simulated provider…' : `Pay ${formatMoney(order.amountMinor, order.currency)}`}

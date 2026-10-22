@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * Fake payment-method tokens that select a simulated provider outcome, in the spirit of
- * Stripe's test cards. FinFlow never accepts card numbers.
+ * Fake payment-method tokens that select a simulated outcome, in the spirit of Stripe's test
+ * cards. FinFlow never accepts card numbers.
  */
 public enum SimulationScenario {
     SUCCESS("tok_success", Outcome.APPROVE, null,
@@ -18,9 +18,12 @@ public enum SimulationScenario {
             "Declined: expired card", "The payment method has expired."),
     TIMEOUT("tok_timeout", Outcome.TIMEOUT, null,
             "Provider timeout", "The provider approves but the response is lost. The payment ends up TIMED_OUT "
-            + "until it is synced with the provider."),
+            + "until it is synced with the provider (automatically after a few seconds, or manually)."),
     PROVIDER_UNAVAILABLE("tok_provider_unavailable", Outcome.UNAVAILABLE, null,
-            "Provider unavailable", "The provider refuses the connection. Nothing is charged; a new attempt is safe.");
+            "Provider unavailable", "The provider refuses the connection. Nothing is charged; a new attempt is safe."),
+    CRASH_AFTER_PROVIDER_APPROVAL("tok_crash_after_provider_approval", Outcome.APPROVE, null,
+            "FinFlow crash after approval", "Fault injection: the provider approves, then FinFlow fails before "
+            + "saving the result. The payment stays CREATED until reconciliation recovers it.");
 
     public enum Outcome { APPROVE, DECLINE, TIMEOUT, UNAVAILABLE }
 
@@ -40,6 +43,11 @@ public enum SimulationScenario {
 
     public static Optional<SimulationScenario> fromToken(String token) {
         return Arrays.stream(values()).filter(s -> s.token.equals(token)).findFirst();
+    }
+
+    /** True for the demo fault-injection token that makes FinFlow fail after the provider call. */
+    public boolean crashesBeforeLocalCommit() {
+        return this == CRASH_AFTER_PROVIDER_APPROVAL;
     }
 
     public String token() {

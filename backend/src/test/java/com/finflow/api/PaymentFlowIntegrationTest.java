@@ -152,8 +152,9 @@ class PaymentFlowIntegrationTest extends IntegrationTestBase {
 
         String firstId = json(postJson(key, "/api/v1/payments", body, idem)
                 .andExpect(status().isCreated()).andReturn()).read("$.id");
+        // The replay returns the original status code and body unchanged.
         postJson(key, "/api/v1/payments", body, idem)
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(header().string("Idempotent-Replayed", "true"))
                 .andExpect(jsonPath("$.id").value(firstId));
 

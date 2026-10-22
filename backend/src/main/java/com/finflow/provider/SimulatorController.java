@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Simulator")
 public class SimulatorController {
 
-    private final SimulatorProperties properties;
+    private final SimulatorSettings settings;
 
-    public SimulatorController(SimulatorProperties properties) {
-        this.properties = properties;
+    public SimulatorController(SimulatorSettings settings) {
+        this.settings = settings;
     }
 
     public record ScenarioResponse(String token, String label, String description, SimulationScenario.Outcome outcome) {
@@ -31,6 +31,6 @@ public class SimulatorController {
         List<ScenarioResponse> scenarios = Arrays.stream(SimulationScenario.values())
                 .map(s -> new ScenarioResponse(s.token(), s.label(), s.description(), s.outcome()))
                 .toList();
-        return new ScenariosResponse(scenarios, properties.latencyMs(), properties.timeoutMs(), properties.outage());
+        return new ScenariosResponse(scenarios, settings.latencyMs(), settings.timeoutMs(), settings.outage());
     }
 }

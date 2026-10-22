@@ -8,6 +8,9 @@ import { OrderDetail } from './pages/OrderDetail';
 import { Orders } from './pages/Orders';
 import { PaymentDetail } from './pages/PaymentDetail';
 import { Payments } from './pages/Payments';
+import { Reconciliation } from './pages/Reconciliation';
+import { WebhookDeliveryDetail } from './pages/WebhookDeliveryDetail';
+import { Webhooks } from './pages/Webhooks';
 import { Welcome } from './pages/Welcome';
 
 export function App() {
@@ -24,6 +27,9 @@ export function App() {
         <Route path="orders/new" element={<NewOrder />} />
         <Route path="orders/:orderId" element={<OrderDetail />} />
         <Route path="ledger" element={<Ledger />} />
+        <Route path="webhooks" element={<Webhooks />} />
+        <Route path="webhooks/deliveries/:deliveryId" element={<WebhookDeliveryDetail />} />
+        <Route path="reconciliation" element={<Reconciliation />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

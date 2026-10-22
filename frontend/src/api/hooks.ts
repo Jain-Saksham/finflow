@@ -1,7 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from './client';
+import { api, newIdempotencyKey } from './client';
 import type {
   CaptureMode,
+  DeliveryDetail,
+  DeliveryStatus,
+  ReconciliationReport,
+  ReconciliationRun,
+  SimulatedBehavior,
+  WebhookDelivery,
+  WebhookEndpoint,
   Currency,
   DashboardSummary,
   LedgerBalances,
@@ -81,7 +88,7 @@ function useInvalidateMoneyState() {
   const client = useQueryClient();
   return () =>
     Promise.all(
-      [['payments'], ['payment'], ['orders'], ['order'], ['ledger'], ['dashboard']].map((queryKey) =>
+      [['payments'], ['payment'], ['orders'], ['order'], ['ledger'], ['dashboard'], ['webhooks']].map((queryKey) =>
         client.invalidateQueries({ queryKey }),
       ),
     );
@@ -112,8 +119,12 @@ export function useCreatePayment() {
 export function usePaymentAction(paymentId: string) {
   const invalidate = useInvalidateMoneyState();
   return useMutation({
+    // Capture and void carry a fresh Idempotency-Key per click, so a network retry cannot repeat them.
     mutationFn: (action: 'capture' | 'void' | 'sync') =>
-      api<Payment>(`/api/v1/payments/${paymentId}/${action}`, { method: 'POST' }),
+      api<Payment>(`/api/v1/payments/${paymentId}/${action}`, {
+        method: 'POST',
+        idempotencyKey: action === 'sync' ? undefined : newIdempotencyKey(),
+      }),
     onSettled: invalidate, // a rejected action may still have recorded a failed attempt in history
   });
 }
@@ -128,5 +139,81 @@ export function useCreateRefund(paymentId: string) {
         body: { amountMinor: vars.amountMinor, reason: vars.reason },
       }),
     onSettled: invalidate,
+  });
+}
+
+// ---------- Webhooks ----------
+
+export const useWebhookEndpoints = () =>
+  useQuery({ queryKey: ['webhooks', 'endpoints'], queryFn: () => api<WebhookEndpoint[]>('/api/v1/webhook-endpoints') });
+
+export function useCreateWebhookEndpoint() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { simulatedBehavior: SimulatedBehavior; description?: string }) =>
+      api<WebhookEndpoint>('/api/v1/webhook-endpoints', { method: 'POST', body }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['webhooks'] }),
+  });
+}
+
+export function useToggleWebhookEndpoint() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; enable: boolean }) =>
+      api<WebhookEndpoint>(`/api/v1/webhook-endpoints/${vars.id}/${vars.enable ? 'enable' : 'disable'}`, { method: 'POST' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['webhooks'] }),
+  });
+}
+
+export function useWebhookDeliveries(filters: { status?: DeliveryStatus | ''; paymentId?: string; page?: number; size?: number }) {
+  return useQuery({
+    queryKey: ['webhooks', 'deliveries', filters],
+    queryFn: () => api<Page<WebhookDelivery>>('/api/v1/webhook-deliveries' + query(filters)),
+    placeholderData: keepPreviousData,
+    refetchInterval: 5_000, // retries happen in the background
+  });
+}
+
+export const useWebhookDelivery = (id: string) =>
+  useQuery({
+    queryKey: ['webhooks', 'delivery', id],
+    queryFn: () => api<DeliveryDetail>(`/api/v1/webhook-deliveries/${id}`),
+    refetchInterval: 3_000,
+  });
+
+export function useRedeliver(id: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<DeliveryDetail>(`/api/v1/webhook-deliveries/${id}/redeliver`, { method: 'POST' }),
+    onSettled: () => client.invalidateQueries({ queryKey: ['webhooks'] }),
+  });
+}
+
+// ---------- Reconciliation ----------
+
+export function useReconciliationRuns(page = 0) {
+  return useQuery({
+    queryKey: ['reconciliation', 'runs', page],
+    queryFn: () => api<Page<ReconciliationRun>>('/api/v1/reconciliation/runs' + query({ page, size: 10 })),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export const useReconciliationReport = (runId: string | undefined) =>
+  useQuery({
+    queryKey: ['reconciliation', 'run', runId],
+    queryFn: () => api<ReconciliationReport>(`/api/v1/reconciliation/runs/${runId}`),
+    enabled: !!runId,
+  });
+
+export function useRunReconciliation() {
+  const invalidate = useInvalidateMoneyState();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<ReconciliationReport>('/api/v1/reconciliation/runs', { method: 'POST' }),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ['reconciliation'] });
+      await invalidate(); // automatic repairs may have changed payments and the ledger
+    },
   });
 }

@@ -2,7 +2,10 @@ package com.finflow.security;
 
 import com.finflow.common.error.ErrorCode;
 import com.finflow.common.web.RequestIdFilter;
-import com.finflow.merchant.MerchantRepository;
+import com.finflow.ratelimit.RateLimitFilter;
+import com.finflow.ratelimit.RateLimitProperties;
+import com.finflow.ratelimit.RateLimiter;
+import org.springframework.beans.factory.annotation.Value;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +36,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, MerchantRepository merchants,
-                                            AuthenticationEntryPoint entryPoint) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, ApiKeyResolver apiKeys, AuthenticationEntryPoint entryPoint,
+                                            RateLimiter rateLimiter, RateLimitProperties rateLimits, JsonMapper jsonMapper,
+                                            @Value("${finflow.ops.token:}") String opsToken) throws Exception {
         http
                 // Stateless API authenticated by a header, not cookies, so there is no ambient
                 // credential for a cross-site request to ride on: CSRF protection is unnecessary.
@@ -44,12 +48,25 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
-                .addFilterBefore(new ApiKeyAuthenticationFilter(merchants), AbstractPreAuthenticatedProcessingFilter.class)
-                .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint))
+                .addFilterBefore(new OpsTokenFilter(opsToken), AbstractPreAuthenticatedProcessingFilter.class)
+                .addFilterBefore(new ApiKeyAuthenticationFilter(apiKeys), AbstractPreAuthenticatedProcessingFilter.class)
+                .addFilterAfter(new RateLimitFilter(rateLimiter, rateLimits, jsonMapper),
+                        AbstractPreAuthenticatedProcessingFilter.class)
+                .exceptionHandling(e -> e.authenticationEntryPoint(entryPoint)
+                        .accessDeniedHandler((request, response, ex) -> {
+                            response.setStatus(403);
+                            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+                            jsonMapper.writeValue(response.getOutputStream(), Map.of("type",
+                                    "https://finflow.dev/errors/forbidden", "title", "Forbidden", "status", 403,
+                                    "detail", "This credential cannot access this resource.", "code",
+                                    ErrorCode.FORBIDDEN.name()));
+                        }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/v1/demo/**", "/api/v1/simulator/scenarios").permitAll()
-                        .requestMatchers("/actuator/health/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/error").permitAll()
+                        .requestMatchers("/api/v1/demo/**", "/api/v1/simulator/**").permitAll()
+                        .requestMatchers("/api/ops/**").hasRole("OPS")
+                        .requestMatchers("/actuator/health/**", "/actuator/prometheus", "/v3/api-docs/**", "/swagger-ui/**",
+                                "/swagger-ui.html", "/error").permitAll()
                         .requestMatchers("/api/**").hasRole("MERCHANT")
                         .anyRequest().denyAll());
         return http.build();
@@ -63,7 +80,8 @@ public class SecurityConfig {
             body.put("type", "https://finflow.dev/errors/unauthenticated");
             body.put("title", "Unauthorized");
             body.put("status", 401);
-            body.put("detail", "A valid X-API-Key header is required.");
+            body.put("detail", request.getRequestURI().startsWith("/api/ops/")
+                    ? "A valid X-Ops-Token header is required." : "A valid X-API-Key header is required.");
             body.put("instance", request.getRequestURI());
             body.put("code", ErrorCode.UNAUTHENTICATED.name());
             body.put("requestId", MDC.get(RequestIdFilter.MDC_KEY));
@@ -79,7 +97,8 @@ public class SecurityConfig {
         config.setAllowedOrigins(properties.allowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
         config.setAllowedHeaders(List.of("Content-Type", ApiKeyAuthenticationFilter.HEADER, "Idempotency-Key", RequestIdFilter.HEADER));
-        config.setExposedHeaders(List.of(RequestIdFilter.HEADER, "Idempotent-Replayed"));
+        config.setExposedHeaders(List.of(RequestIdFilter.HEADER, "Idempotent-Replayed", "Retry-After",
+                "X-RateLimit-Limit", "X-RateLimit-Remaining"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);

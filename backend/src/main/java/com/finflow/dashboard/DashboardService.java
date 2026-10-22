@@ -1,5 +1,8 @@
 package com.finflow.dashboard;
 
+import com.finflow.cache.CacheProperties;
+import com.finflow.cache.JsonCache;
+import com.finflow.events.PaymentStateChanged;
 import com.finflow.order.OrderRepository;
 import com.finflow.payment.PaymentDtos.PaymentResponse;
 import com.finflow.payment.PaymentService;
@@ -22,6 +25,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Dashboard aggregates computed live from the payments table with plain SQL (a read model:
@@ -36,12 +41,19 @@ public class DashboardService {
     private final PaymentService paymentService;
     private final OrderRepository orders;
     private final Clock clock;
+    private final JsonCache cache;
+    private final CacheProperties cacheProperties;
 
-    public DashboardService(NamedParameterJdbcTemplate jdbc, PaymentService paymentService, OrderRepository orders) {
+    static final String CACHE = "dashboard";
+
+    public DashboardService(NamedParameterJdbcTemplate jdbc, PaymentService paymentService, OrderRepository orders,
+                            JsonCache cache, CacheProperties cacheProperties) {
         this.jdbc = jdbc;
         this.paymentService = paymentService;
         this.orders = orders;
         this.clock = Clock.systemUTC();
+        this.cache = cache;
+        this.cacheProperties = cacheProperties;
     }
 
     public record CurrencyVolume(String currency, long capturedMinor, long refundedMinor, long netMinor,
@@ -64,8 +76,19 @@ public class DashboardService {
                           List<PaymentResponse> recentPayments) {
     }
 
-    @Transactional(readOnly = true)
+    /** Cached for at most {@code finflow.cache.dashboard-ttl}; evicted after any payment change commits. */
     public Summary summary(UUID merchantId) {
+        return cache.getOrLoad(CACHE, merchantId.toString(), Summary.class, cacheProperties.dashboardTtl(),
+                () -> compute(merchantId));
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onPaymentChanged(PaymentStateChanged event) {
+        cache.evict(CACHE, event.merchantId().toString());
+    }
+
+    @Transactional(readOnly = true)
+    public Summary compute(UUID merchantId) {
         var params = new MapSqlParameterSource("merchantId", merchantId);
 
         Map<PaymentStatus, Long> statusCounts = new EnumMap<>(PaymentStatus.class);

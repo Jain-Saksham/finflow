@@ -11,6 +11,8 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5433/finflow}
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
   jpa:
     open-in-view: false
     hibernate:
@@ -27,9 +29,48 @@ spring:
   autoconfigure:
     # Authentication is API-key based; no default in-memory user/password should be generated.
     exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 5000
+        # send() blocks while metadata is unavailable (broker down). Bounded so a Kafka outage cannot
+        # hold the outbox publisher's database transaction for the 60 s default.
+        max.block.ms: 5000
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        allow.auto.create.topics: false
+    properties:
+      # Managed Kafka (SASL/SSL) is configured purely through environment variables.
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
+      # One consumer thread per partition of the payment-events topic.
+      concurrency: ${FINFLOW_KAFKA_PARTITIONS:3}
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      # Short timeouts: Redis is an optimization, so a slow or dead Redis must not stall requests.
+      timeout: 250ms
+      connect-timeout: 500ms
 
 server:
   port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  forward-headers-strategy: ${FINFLOW_FORWARD_HEADERS_STRATEGY:none}
   error:
     include-stacktrace: never
     include-message: never
@@ -38,11 +79,48 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       probes:
         enabled: true
+      group:
+        # Readiness depends only on what correctness needs. Redis and Kafka outages degrade
+        # features (caching, async delivery) but the API can still serve requests safely.
+        readiness:
+          include: readinessState,db
+  health:
+    redis:
+      enabled: false
+  metrics:
+    tags:
+      application: finflow
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        finflow.provider.latency: true
+        finflow.payment.processing: true
+  tracing:
+    sampling:
+      probability: ${FINFLOW_TRACING_SAMPLING:1.0}
+    export:
+      enabled: ${FINFLOW_TRACING_EXPORT_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    resource-attributes:
+      service.name: finflow-backend
+  logging:
+    export:
+      otlp:
+        enabled: false
+  otlp:
+    metrics:
+      export:
+        # Metrics are scraped by Prometheus from /actuator/prometheus; OTLP is used for traces only.
+        enabled: false
 
 springdoc:
   # Public on purpose: the API docs are part of the portfolio demo.
@@ -53,12 +131,19 @@ springdoc:
     enabled: true
     path: /swagger-ui.html
     operations-sorter: method
+  paths-to-exclude: /api/ops/**
 
 logging:
   pattern:
-    level: "%5p [req=%X{requestId:-}]"
+    level: "%5p [req=%X{requestId:-} trace=%X{traceId:-}]"
+  structured:
+    format:
+      # FINFLOW_LOG_FORMAT=ecs (or logstash) switches console logs to JSON, e.g. in containers.
+      console: ${FINFLOW_LOG_FORMAT:}
   level:
     com.finflow: INFO
+    org.apache.kafka: WARN
+    io.netty.resolver.dns: ERROR
 
 finflow:
   cors:
@@ -73,3 +158,55 @@ finflow:
     outage: ${FINFLOW_SIMULATOR_OUTAGE:false}
   refunds:
     window-days: ${FINFLOW_REFUND_WINDOW_DAYS:180}
+  ops:
+    # Enables /api/ops/** (dead-letter replay, ledger reversal, ...) for this token. Empty = disabled.
+    token: ${FINFLOW_OPS_TOKEN:}
+  idempotency:
+    lease: ${FINFLOW_IDEMPOTENCY_LEASE:30s}
+    retention: ${FINFLOW_IDEMPOTENCY_RETENTION:24h}
+  kafka:
+    topic: ${FINFLOW_KAFKA_TOPIC:finflow.payment-events}
+    dlt-topic: ${FINFLOW_KAFKA_DLT_TOPIC:finflow.payment-events.dlt}
+    partitions: ${FINFLOW_KAFKA_PARTITIONS:3}
+    replication-factor: ${FINFLOW_KAFKA_REPLICATION_FACTOR:1}
+    create-topics: ${FINFLOW_KAFKA_CREATE_TOPICS:true}
+    consumer-retries: 3
+    consumer-retry-backoff: 500ms
+  outbox:
+    enabled: ${FINFLOW_OUTBOX_ENABLED:true}
+    poll-interval: ${FINFLOW_OUTBOX_POLL_INTERVAL:500ms}
+    batch-size: 500
+    max-attempts: 20
+    send-timeout: 5s
+  webhooks:
+    worker-enabled: ${FINFLOW_WEBHOOK_WORKER_ENABLED:true}
+    poll-interval: 500ms
+    # Also the maximum number of concurrent HTTP deliveries per instance.
+    batch-size: 50
+    lease: 30s
+    request-timeout: 3s
+    retry-schedule: ${FINFLOW_WEBHOOK_RETRY_SCHEDULE:2s,10s,30s,2m,10m}
+    max-endpoints-per-merchant: 5
+    signature-tolerance: 5m
+    # Base URL at which this backend can reach itself, for the built-in simulated receiver.
+    # Empty = http://localhost:<server port>.
+    internal-receiver-base-url: ${FINFLOW_WEBHOOK_RECEIVER_BASE_URL:}
+    # External webhook URLs must start with one of these (comma-separated). Empty = external URLs are
+    # rejected, so the public demo cannot be used to send requests to arbitrary hosts (SSRF).
+    allowed-url-prefixes: ${FINFLOW_WEBHOOK_ALLOWED_URL_PREFIXES:}
+  recovery:
+    auto-sync-enabled: ${FINFLOW_AUTO_SYNC_ENABLED:true}
+    auto-sync-delay: ${FINFLOW_AUTO_SYNC_DELAY:5s}
+  reconciliation:
+    schedule-enabled: ${FINFLOW_RECONCILIATION_SCHEDULE_ENABLED:true}
+    interval: ${FINFLOW_RECONCILIATION_INTERVAL:10m}
+    # Payments/refunds younger than this are left alone: they may still be in flight.
+    stale-after: ${FINFLOW_RECONCILIATION_STALE_AFTER:60s}
+  rate-limit:
+    enabled: ${FINFLOW_RATE_LIMIT_ENABLED:true}
+    requests-per-minute: ${FINFLOW_RATE_LIMIT_RPM:300}
+    writes-per-minute: ${FINFLOW_RATE_LIMIT_WRITES_PM:60}
+    public-per-minute: ${FINFLOW_RATE_LIMIT_PUBLIC_PM:60}
+  cache:
+    api-key-ttl: 5m
+    dashboard-ttl: 10s

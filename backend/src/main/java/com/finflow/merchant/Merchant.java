@@ -55,6 +55,10 @@ public class Merchant extends AuditedEntity {
         return name;
     }
 
+    public String getApiKeyHash() {
+        return apiKeyHash;
+    }
+
     public String getApiKeyPrefix() {
         return apiKeyPrefix;
     }

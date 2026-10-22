@@ -29,12 +29,12 @@ public class LedgerController {
     }
 
     public record LedgerEntryResponse(long id, UUID journalId, JournalType journalType, UUID paymentId, UUID refundId,
-                                      LedgerAccount account, EntryDirection direction, long amountMinor,
+                                      UUID reversesJournalId, LedgerAccount account, EntryDirection direction, long amountMinor,
                                       String currency, String description, Instant createdAt) {
 
         static LedgerEntryResponse from(LedgerEntry e) {
             return new LedgerEntryResponse(e.getId(), e.getJournalId(), e.getJournalType(), e.getPaymentId(),
-                    e.getRefundId(), e.getAccount(), e.getDirection(), e.getAmountMinor(), e.getCurrency(),
+                    e.getRefundId(), e.getReversesJournalId(), e.getAccount(), e.getDirection(), e.getAmountMinor(), e.getCurrency(),
                     e.getDescription(), e.getCreatedAt());
         }
     }

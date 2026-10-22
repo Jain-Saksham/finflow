@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { newIdempotencyKey } from '../api/client';
-import { useCreateRefund, useLedgerEntries, usePayment, usePaymentAction, usePaymentEvents, useRefunds } from '../api/hooks';
+import { useCreateRefund, useLedgerEntries, usePayment, usePaymentAction, usePaymentEvents, useRefunds, useWebhookDeliveries } from '../api/hooks';
+import { DeliveryBadge } from '../components/DeliveryBadge';
 import type { Payment, PaymentAction } from '../api/types';
 import { Icon } from '../components/Icons';
 import { EmptyState, ErrorAlert, LoadingBlock, SuccessAlert } from '../components/States';
@@ -228,6 +229,33 @@ function PaymentLedger({ paymentId }: { paymentId: string }) {
   );
 }
 
+function PaymentWebhooks({ paymentId }: { paymentId: string }) {
+  const deliveries = useWebhookDeliveries({ paymentId, size: 20 });
+  return (
+    <section className="card">
+      <div className="card-head"><div><h2>Webhook deliveries</h2><p>One per event and endpoint</p></div></div>
+      {deliveries.isPending && <LoadingBlock rows={2} />}
+      {deliveries.error && <div className="card-body"><ErrorAlert error={deliveries.error} /></div>}
+      {deliveries.data && deliveries.data.totalElements === 0 && (
+        <EmptyState title="None yet">Events are delivered asynchronously via Kafka.</EmptyState>
+      )}
+      {deliveries.data && deliveries.data.totalElements > 0 && (
+        <div className="card-body stack" style={{ gap: 8 }}>
+          {deliveries.data.content.map((d) => (
+            <Link key={d.id} to={`/webhooks/deliveries/${d.id}`} className="row spread" style={{ color: 'inherit' }}>
+              <span className="mono" style={{ fontSize: 12.5 }}>{d.eventType}</span>
+              <span className="row" style={{ gap: 6 }}>
+                <span className="faint num" style={{ fontSize: 12 }}>×{d.attemptCount}</span>
+                <DeliveryBadge status={d.status} />
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function PaymentDetail() {
   const { paymentId = '' } = useParams();
   const { data: payment, isPending, error } = usePayment(paymentId);
@@ -284,10 +312,13 @@ export function PaymentDetail() {
             <div style={{ padding: '6px 4px 4px' }}><PaymentLedger paymentId={payment.id} /></div>
           </section>
         </div>
-        <section className="card" style={{ alignSelf: 'start' }}>
-          <div className="card-head"><div><h2>History</h2><p>Every state transition, oldest first</p></div></div>
-          <Timeline paymentId={payment.id} />
-        </section>
+        <div className="stack" style={{ alignSelf: 'start' }}>
+          <section className="card">
+            <div className="card-head"><div><h2>History</h2><p>Every state transition, oldest first</p></div></div>
+            <Timeline paymentId={payment.id} />
+          </section>
+          <PaymentWebhooks paymentId={payment.id} />
+        </div>
       </div>
     </>
   );

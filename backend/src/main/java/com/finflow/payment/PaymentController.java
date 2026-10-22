@@ -2,6 +2,7 @@ package com.finflow.payment;
 
 import com.finflow.common.web.PageResponse;
 import com.finflow.common.web.Paging;
+import com.finflow.idempotency.IdempotencyService;
 import com.finflow.payment.PaymentDtos.CreatePaymentRequest;
 import com.finflow.payment.PaymentDtos.PaymentEventResponse;
 import com.finflow.payment.PaymentDtos.PaymentResponse;
@@ -36,27 +37,61 @@ public class PaymentController {
     public static final String IDEMPOTENCY_KEY_MESSAGE = "must be 8-255 characters of letters, digits, '-' or '_'";
 
     private final PaymentService paymentService;
+    private final IdempotencyService idempotency;
 
-    public PaymentController(PaymentService paymentService) {
+    public PaymentController(PaymentService paymentService, IdempotencyService idempotency) {
         this.paymentService = paymentService;
+        this.idempotency = idempotency;
+    }
+
+    /** What the fingerprint covers: the normalized request, so an omitted default equals an explicit one. */
+    public record CreateFingerprint(UUID orderId, String paymentMethodToken, CaptureMode captureMode) {
+    }
+
+    record ActionFingerprint(UUID paymentId) {
     }
 
     @PostMapping
     @Operation(summary = "Create and authorize a payment for an order",
-            description = "Repeating a request with the same Idempotency-Key returns the original payment "
-                    + "(200, header Idempotent-Replayed: true) instead of charging again.")
+            description = "Repeating a request with the same Idempotency-Key returns the original status and body "
+                    + "(header Idempotent-Replayed: true) instead of charging again. A different body with the same "
+                    + "key is 409 IDEMPOTENCY_KEY_REUSED; a retry while the first is running is 409 "
+                    + "IDEMPOTENCY_REQUEST_IN_PROGRESS.")
     public ResponseEntity<PaymentResponse> create(
             @AuthenticationPrincipal MerchantPrincipal merchant,
             @Parameter(description = "Unique per payment attempt, e.g. a UUID", required = true)
             @RequestHeader("Idempotency-Key") @Pattern(regexp = IDEMPOTENCY_KEY_PATTERN, message = IDEMPOTENCY_KEY_MESSAGE)
             String idempotencyKey,
             @Valid @RequestBody CreatePaymentRequest request) {
-        PaymentService.CreateResult result = paymentService.create(merchant.merchantId(), idempotencyKey, request);
-        PaymentResponse body = PaymentResponse.from(result.payment());
-        if (result.replayed()) {
-            return ResponseEntity.ok().header("Idempotent-Replayed", "true").body(body);
+        var fingerprint = new CreateFingerprint(request.orderId(), request.paymentMethodToken(), request.captureModeOrDefault());
+        var outcome = idempotency.execute(merchant.merchantId(), idempotencyKey, "payments.create", fingerprint,
+                PaymentResponse.class, () -> {
+                    PaymentService.CreateResult result = paymentService.create(merchant.merchantId(), idempotencyKey, request);
+                    return new IdempotencyService.Outcome<>(PaymentResponse.from(result.payment()),
+                            result.replayed() ? 200 : 201, result.replayed(), result.payment().getId());
+                });
+        return respond(outcome);
+    }
+
+    static <T> ResponseEntity<T> respond(IdempotencyService.Outcome<T> outcome) {
+        var builder = ResponseEntity.status(outcome.status());
+        if (outcome.status() == 201 && outcome.resourceId() != null) {
+            builder.location(URI.create("/api/v1/payments/" + outcome.resourceId()));
         }
-        return ResponseEntity.created(URI.create("/api/v1/payments/" + body.id())).body(body);
+        if (outcome.replayed()) {
+            builder.header("Idempotent-Replayed", "true");
+        }
+        return builder.body(outcome.body());
+    }
+
+    private ResponseEntity<PaymentResponse> action(MerchantPrincipal merchant, UUID paymentId, String idempotencyKey,
+                                                   String operation, java.util.function.Supplier<Payment> call) {
+        if (idempotencyKey == null) {
+            return ResponseEntity.ok(PaymentResponse.from(call.get()));
+        }
+        return respond(idempotency.execute(merchant.merchantId(), idempotencyKey, operation,
+                new ActionFingerprint(paymentId), PaymentResponse.class,
+                () -> new IdempotencyService.Outcome<>(PaymentResponse.from(call.get()), 200, false, paymentId)));
     }
 
     @GetMapping
@@ -84,15 +119,25 @@ public class PaymentController {
     }
 
     @PostMapping("/{paymentId}/capture")
-    @Operation(summary = "Capture an AUTHORIZED payment (full amount)")
-    public PaymentResponse capture(@AuthenticationPrincipal MerchantPrincipal merchant, @PathVariable UUID paymentId) {
-        return PaymentResponse.from(paymentService.capture(merchant.merchantId(), paymentId));
+    @Operation(summary = "Capture an AUTHORIZED payment (full amount)",
+            description = "Optional Idempotency-Key: with it, a retried capture replays the original 200 instead of "
+                    + "failing with 409 INVALID_STATE_TRANSITION.")
+    public ResponseEntity<PaymentResponse> capture(
+            @AuthenticationPrincipal MerchantPrincipal merchant, @PathVariable UUID paymentId,
+            @RequestHeader(value = "Idempotency-Key", required = false)
+            @Pattern(regexp = IDEMPOTENCY_KEY_PATTERN, message = IDEMPOTENCY_KEY_MESSAGE) String idempotencyKey) {
+        return action(merchant, paymentId, idempotencyKey, "payments.capture",
+                () -> paymentService.capture(merchant.merchantId(), paymentId));
     }
 
     @PostMapping("/{paymentId}/void")
-    @Operation(summary = "Void (release) an AUTHORIZED payment")
-    public PaymentResponse voidPayment(@AuthenticationPrincipal MerchantPrincipal merchant, @PathVariable UUID paymentId) {
-        return PaymentResponse.from(paymentService.voidAuthorization(merchant.merchantId(), paymentId));
+    @Operation(summary = "Void (release) an AUTHORIZED payment", description = "Optional Idempotency-Key, as for capture.")
+    public ResponseEntity<PaymentResponse> voidPayment(
+            @AuthenticationPrincipal MerchantPrincipal merchant, @PathVariable UUID paymentId,
+            @RequestHeader(value = "Idempotency-Key", required = false)
+            @Pattern(regexp = IDEMPOTENCY_KEY_PATTERN, message = IDEMPOTENCY_KEY_MESSAGE) String idempotencyKey) {
+        return action(merchant, paymentId, idempotencyKey, "payments.void",
+                () -> paymentService.voidAuthorization(merchant.merchantId(), paymentId));
     }
 
     @PostMapping("/{paymentId}/sync")

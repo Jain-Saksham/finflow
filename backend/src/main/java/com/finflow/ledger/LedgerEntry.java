@@ -38,6 +38,9 @@ public class LedgerEntry {
     @Column(name = "refund_id")
     private UUID refundId;
 
+    @Column(name = "reverses_journal_id")
+    private UUID reversesJournalId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LedgerAccount account;
@@ -67,11 +70,12 @@ public class LedgerEntry {
         this.merchantId = journal.merchantId();
         this.paymentId = journal.paymentId();
         this.refundId = journal.refundId();
+        this.reversesJournalId = journal.reversesJournalId();
         this.account = line.account();
         this.direction = line.direction();
         this.amountMinor = line.amountMinor();
         this.currency = journal.currency();
-        this.description = journal.description();
+        this.description = journal.description().length() <= 255 ? journal.description() : journal.description().substring(0, 255);
         this.createdAt = createdAt;
     }
 
@@ -85,6 +89,14 @@ public class LedgerEntry {
 
     public JournalType getJournalType() {
         return journalType;
+    }
+
+    public UUID getMerchantId() {
+        return merchantId;
+    }
+
+    public UUID getReversesJournalId() {
+        return reversesJournalId;
     }
 
     public UUID getPaymentId() {

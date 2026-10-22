@@ -55,6 +55,19 @@ interface RequestOptions {
   idempotencyKey?: string;
 }
 
+/** Fetches an authenticated file (e.g. a CSV report) and hands it to the browser as a download. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const apiKey = getApiKey();
+  const response = await fetch(BASE_URL + path, { headers: apiKey ? { 'X-API-Key': apiKey } : {} });
+  if (!response.ok) throw new ApiError(response.status, `HTTP_${response.status}`, 'Download failed');
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
   const apiKey = getApiKey();

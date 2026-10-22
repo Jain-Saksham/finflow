@@ -3,6 +3,7 @@ package com.finflow.demo;
 import com.finflow.merchant.ApiKeys;
 import com.finflow.merchant.Merchant;
 import com.finflow.merchant.MerchantRepository;
+import com.finflow.security.ApiKeyResolver;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +19,14 @@ public class DemoAccount {
 
     private final MerchantRepository merchants;
     private final DemoProperties properties;
+    private final ApiKeyResolver apiKeys;
     private volatile Merchant merchant;
     private volatile String apiKey;
 
-    public DemoAccount(MerchantRepository merchants, DemoProperties properties) {
+    public DemoAccount(MerchantRepository merchants, DemoProperties properties, ApiKeyResolver apiKeys) {
         this.merchants = merchants;
         this.properties = properties;
+        this.apiKeys = apiKeys;
     }
 
     @Transactional
@@ -32,6 +35,8 @@ public class DemoAccount {
                 ? ApiKeys.generate()
                 : properties.apiKey().strip();
         Merchant m = merchants.findByDemoTrue().orElseGet(() -> new Merchant(MERCHANT_NAME, "USD", true, key));
+        // The previous key must stop working now, not when its cache entry expires.
+        apiKeys.evict(m.getApiKeyHash());
         m.rotateApiKey(key);
         this.merchant = merchants.save(m);
         this.apiKey = key;

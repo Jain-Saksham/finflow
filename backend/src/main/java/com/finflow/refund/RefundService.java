@@ -9,6 +9,7 @@ import com.finflow.payment.Payment;
 import com.finflow.payment.PaymentEventType;
 import com.finflow.payment.PaymentHistory;
 import com.finflow.payment.PaymentRepository;
+import com.finflow.payment.PaymentService;
 import com.finflow.provider.PaymentProvider;
 import com.finflow.provider.ProviderException;
 import com.finflow.provider.ProviderTimeoutException;
@@ -65,7 +66,7 @@ public class RefundService {
         }
 
         Refund refund;
-        String providerReference;
+        PaymentProvider.Operation reservation;
         try {
             var reserved = tx.execute(status -> {
                 Payment payment = lock(merchantId, paymentId);
@@ -75,10 +76,10 @@ public class RefundService {
                         : payment.refundableAmountMinor() - pending;
                 policy.assertEligible(payment, amount, pending, AuditedEntity.now());
                 Refund r = refunds.saveAndFlush(new Refund(payment, amount, blankToNull(request.reason()), idempotencyKey));
-                return new Reservation(r, payment.getProviderReference());
+                return new Reservation(r, PaymentService.operation(payment));
             });
             refund = Objects.requireNonNull(reserved).refund();
-            providerReference = reserved.providerReference();
+            reservation = reserved.operation();
         } catch (DataIntegrityViolationException e) {
             return refunds.findByMerchantIdAndIdempotencyKey(merchantId, idempotencyKey)
                     .map(r -> replay(r, paymentId, request))
@@ -86,12 +87,28 @@ public class RefundService {
         }
 
         try {
-            String refundReference = provider.refund(providerReference, refund.getId(), refund.getAmountMinor());
+            String refundReference = provider.refund(reservation, refund.getId(), refund.getAmountMinor());
             return new CreateResult(confirm(merchantId, refund.getId(), refundReference), false);
         } catch (ProviderException e) {
             log.warn("Refund {} failed at provider: {}", refund.getId(), e.getMessage());
-            return new CreateResult(markFailed(merchantId, refund.getId(), e), false);
+            String code = e instanceof ProviderTimeoutException ? "provider_timeout" : "provider_unavailable";
+            return new CreateResult(markFailed(merchantId, refund.getId(), code), false);
         }
+    }
+
+    /**
+     * Reconciliation found the provider refund for a refund still PENDING here (FinFlow died after
+     * the provider call): finish the local half. No-op if it is no longer pending.
+     */
+    public Refund confirmFromProvider(UUID merchantId, UUID refundId, String providerReference) {
+        Refund refund = refunds.findById(refundId).filter(r -> r.getStatus() == RefundStatus.PENDING)
+                .orElseThrow(() -> new ApiException(ErrorCode.INVALID_STATE_TRANSITION, "Refund is not pending"));
+        return confirm(merchantId, refund.getId(), providerReference);
+    }
+
+    /** Reconciliation: a stale PENDING refund the provider never saw is failed, releasing its reservation. */
+    public Refund failNotFoundAtProvider(UUID merchantId, UUID refundId) {
+        return markFailed(merchantId, refundId, "not_found_at_provider");
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +118,7 @@ public class RefundService {
         return refunds.findByMerchantIdAndPaymentIdOrderByCreatedAtAsc(merchantId, paymentId);
     }
 
-    private record Reservation(Refund refund, String providerReference) {
+    private record Reservation(Refund refund, PaymentProvider.Operation operation) {
     }
 
     private Refund confirm(UUID merchantId, UUID refundId, String providerReference) {
@@ -109,21 +126,20 @@ public class RefundService {
             Refund r = refunds.findById(refundId).orElseThrow();
             Payment payment = lock(merchantId, r.getPaymentId());
             r.succeed(providerReference);
-            history.record(payment.applyRefund(r.getId(), r.getAmountMinor()));
+            history.record(payment, payment.applyRefund(r.getId(), r.getAmountMinor()));
             ledger.post(Journal.refund(merchantId, payment.getId(), r.getId(), r.getAmountMinor(), r.getCurrency()));
             return r;
         });
     }
 
-    private Refund markFailed(UUID merchantId, UUID refundId, ProviderException e) {
-        // Simplification: a timed-out refund is treated as failed. A real system would keep it
-        // PENDING and confirm via the provider (the simulator never times out on refunds).
-        String code = e instanceof ProviderTimeoutException ? "provider_timeout" : "provider_unavailable";
+    // Simplification: a timed-out refund is treated as failed. A real system would keep it PENDING
+    // and confirm via the provider (the simulator never times out on refunds).
+    private Refund markFailed(UUID merchantId, UUID refundId, String code) {
         return tx.execute(status -> {
             Refund r = refunds.findById(refundId).orElseThrow();
             Payment payment = lock(merchantId, r.getPaymentId());
             r.fail(code);
-            history.record(payment.attemptFailed(PaymentEventType.REFUND_FAILED, "Refund " + r.getId() + ": " + code));
+            history.record(payment, payment.attemptFailed(PaymentEventType.REFUND_FAILED, "Refund " + r.getId() + ": " + code));
             return r;
         });
     }

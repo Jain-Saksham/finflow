@@ -1,0 +1,496 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: /scripts/finflow.js
+        output: -
+
+     scenarios: (100.00%) 4 scenarios, 400 max VUs, 1m30s max duration (incl. graceful stop):
+              * payments: 200.00 iterations/s for 1m0s (maxVUs: 50-200, exec: payments, gracefulStop: 30s)
+              * reads: 20.00 iterations/s for 1m0s (maxVUs: 20-100, exec: reads, gracefulStop: 30s)
+              * refunds: 2.00 iterations/s for 1m0s (maxVUs: 10-50, exec: refunds, gracefulStop: 30s)
+              * retries: 2.00 iterations/s for 1m0s (maxVUs: 10-50, exec: retries, gracefulStop: 30s)
+
+
+running (0m01.0s), 058/098 VUs, 155 complete and 0 interrupted iterations
+payments   [   2% ] 057/058 VUs  0m01.0s/1m0s  200.00 iters/s
+reads      [   2% ] 001/020 VUs  0m01.0s/1m0s  20.00 iters/s
+refunds    [   2% ] 00/10 VUs    0m01.0s/1m0s  2.00 iters/s
+retries    [   2% ] 00/10 VUs    0m01.0s/1m0s  2.00 iters/s
+
+running (0m02.0s), 063/103 VUs, 369 complete and 0 interrupted iterations
+payments   [   3% ] 062/063 VUs  0m02.0s/1m0s  200.00 iters/s
+reads      [   3% ] 001/020 VUs  0m02.0s/1m0s  20.00 iters/s
+refunds    [   3% ] 00/10 VUs    0m02.0s/1m0s  2.00 iters/s
+retries    [   3% ] 00/10 VUs    0m02.0s/1m0s  2.00 iters/s
+
+running (0m03.0s), 070/114 VUs, 574 complete and 0 interrupted iterations
+payments   [   5% ] 068/074 VUs  0m03.0s/1m0s  200.00 iters/s
+reads      [   5% ] 001/020 VUs  0m03.0s/1m0s  20.00 iters/s
+refunds    [   5% ] 01/10 VUs    0m03.0s/1m0s  2.00 iters/s
+retries    [   5% ] 00/10 VUs    0m03.0s/1m0s  2.00 iters/s
+
+running (0m04.0s), 076/124 VUs, 782 complete and 0 interrupted iterations
+payments   [   7% ] 073/084 VUs  0m04.0s/1m0s  200.00 iters/s
+reads      [   7% ] 002/020 VUs  0m04.0s/1m0s  20.00 iters/s
+refunds    [   7% ] 01/10 VUs    0m04.0s/1m0s  2.00 iters/s
+retries    [   7% ] 00/10 VUs    0m04.0s/1m0s  2.00 iters/s
+
+running (0m05.0s), 105/141 VUs, 959 complete and 0 interrupted iterations
+payments   [   8% ] 099/101 VUs  0m05.0s/1m0s  200.00 iters/s
+reads      [   8% ] 004/020 VUs  0m05.0s/1m0s  20.00 iters/s
+refunds    [   8% ] 01/10 VUs    0m05.0s/1m0s  2.00 iters/s
+retries    [   8% ] 01/10 VUs    0m05.0s/1m0s  2.00 iters/s
+
+running (0m06.0s), 182/200 VUs, 1031 complete and 0 interrupted iterations
+payments   [  10% ] 160/160 VUs  0m06.0s/1m0s  200.00 iters/s
+reads      [  10% ] 017/020 VUs  0m06.0s/1m0s  20.00 iters/s
+refunds    [  10% ] 03/10 VUs    0m06.0s/1m0s  2.00 iters/s
+retries    [  10% ] 02/10 VUs    0m06.0s/1m0s  2.00 iters/s
+time="2026-10-22T19:46:38Z" level=warning msg="Insufficient VUs, reached 200 active VUs and cannot initialize more" executor=constant-arrival-rate scenario=payments
+
+running (0m07.0s), 222/243 VUs, 1095 complete and 0 interrupted iterations
+payments   [  12% ] 200/200 VUs  0m07.0s/1m0s  200.00 iters/s
+reads      [  12% ] 014/023 VUs  0m07.0s/1m0s  20.00 iters/s
+refunds    [  12% ] 04/10 VUs    0m07.0s/1m0s  2.00 iters/s
+retries    [  12% ] 04/10 VUs    0m07.0s/1m0s  2.00 iters/s
+
+running (0m08.0s), 200/243 VUs, 1326 complete and 0 interrupted iterations
+payments   [  13% ] 188/200 VUs  0m08.0s/1m0s  200.00 iters/s
+reads      [  13% ] 006/023 VUs  0m08.0s/1m0s  20.00 iters/s
+refunds    [  13% ] 04/10 VUs    0m08.0s/1m0s  2.00 iters/s
+retries    [  13% ] 02/10 VUs    0m08.0s/1m0s  2.00 iters/s
+
+running (0m09.0s), 190/243 VUs, 1560 complete and 0 interrupted iterations
+payments   [  15% ] 181/200 VUs  0m09.0s/1m0s  200.00 iters/s
+reads      [  15% ] 006/023 VUs  0m09.0s/1m0s  20.00 iters/s
+refunds    [  15% ] 02/10 VUs    0m09.0s/1m0s  2.00 iters/s
+retries    [  15% ] 01/10 VUs    0m09.0s/1m0s  2.00 iters/s
+
+running (0m10.0s), 222/243 VUs, 1683 complete and 0 interrupted iterations
+payments   [  17% ] 200/200 VUs  0m10.0s/1m0s  200.00 iters/s
+reads      [  17% ] 017/023 VUs  0m10.0s/1m0s  20.00 iters/s
+refunds    [  17% ] 03/10 VUs    0m10.0s/1m0s  2.00 iters/s
+retries    [  17% ] 02/10 VUs    0m10.0s/1m0s  2.00 iters/s
+
+running (0m11.0s), 210/243 VUs, 1872 complete and 0 interrupted iterations
+payments   [  18% ] 196/200 VUs  0m11.0s/1m0s  200.00 iters/s
+reads      [  18% ] 007/023 VUs  0m11.0s/1m0s  20.00 iters/s
+refunds    [  18% ] 04/10 VUs    0m11.0s/1m0s  2.00 iters/s
+retries    [  18% ] 03/10 VUs    0m11.0s/1m0s  2.00 iters/s
+
+running (0m12.0s), 214/243 VUs, 2060 complete and 0 interrupted iterations
+payments   [  20% ] 200/200 VUs  0m12.0s/1m0s  200.00 iters/s
+reads      [  20% ] 009/023 VUs  0m12.0s/1m0s  20.00 iters/s
+refunds    [  20% ] 03/10 VUs    0m12.0s/1m0s  2.00 iters/s
+retries    [  20% ] 02/10 VUs    0m12.0s/1m0s  2.00 iters/s
+
+running (0m13.0s), 221/243 VUs, 2222 complete and 0 interrupted iterations
+payments   [  22% ] 200/200 VUs  0m13.0s/1m0s  200.00 iters/s
+reads      [  22% ] 014/023 VUs  0m13.0s/1m0s  20.00 iters/s
+refunds    [  22% ] 04/10 VUs    0m13.0s/1m0s  2.00 iters/s
+retries    [  22% ] 03/10 VUs    0m13.0s/1m0s  2.00 iters/s
+
+running (0m14.0s), 228/243 VUs, 2320 complete and 0 interrupted iterations
+payments   [  23% ] 200/200 VUs  0m14.0s/1m0s  200.00 iters/s
+reads      [  23% ] 020/023 VUs  0m14.0s/1m0s  20.00 iters/s
+refunds    [  23% ] 04/10 VUs    0m14.0s/1m0s  2.00 iters/s
+retries    [  23% ] 04/10 VUs    0m14.0s/1m0s  2.00 iters/s
+
+running (0m15.0s), 218/243 VUs, 2500 complete and 0 interrupted iterations
+payments   [  25% ] 200/200 VUs  0m15.0s/1m0s  200.00 iters/s
+reads      [  25% ] 010/023 VUs  0m15.0s/1m0s  20.00 iters/s
+refunds    [  25% ] 05/10 VUs    0m15.0s/1m0s  2.00 iters/s
+retries    [  25% ] 03/10 VUs    0m15.0s/1m0s  2.00 iters/s
+
+running (0m16.0s), 224/243 VUs, 2617 complete and 0 interrupted iterations
+payments   [  27% ] 200/200 VUs  0m16.0s/1m0s  200.00 iters/s
+reads      [  27% ] 015/023 VUs  0m16.0s/1m0s  20.00 iters/s
+refunds    [  27% ] 05/10 VUs    0m16.0s/1m0s  2.00 iters/s
+retries    [  27% ] 04/10 VUs    0m16.0s/1m0s  2.00 iters/s
+
+running (0m17.0s), 225/244 VUs, 2728 complete and 0 interrupted iterations
+payments   [  28% ] 198/200 VUs  0m17.0s/1m0s  200.00 iters/s
+reads      [  28% ] 018/024 VUs  0m17.0s/1m0s  20.00 iters/s
+refunds    [  28% ] 05/10 VUs    0m17.0s/1m0s  2.00 iters/s
+retries    [  28% ] 04/10 VUs    0m17.0s/1m0s  2.00 iters/s
+
+running (0m18.0s), 221/244 VUs, 2884 complete and 0 interrupted iterations
+payments   [  30% ] 200/200 VUs  0m18.0s/1m0s  200.00 iters/s
+reads      [  30% ] 012/024 VUs  0m18.0s/1m0s  20.00 iters/s
+refunds    [  30% ] 05/10 VUs    0m18.0s/1m0s  2.00 iters/s
+retries    [  30% ] 04/10 VUs    0m18.0s/1m0s  2.00 iters/s
+
+running (0m19.0s), 219/244 VUs, 3040 complete and 0 interrupted iterations
+payments   [  32% ] 198/200 VUs  0m19.0s/1m0s  200.00 iters/s
+reads      [  32% ] 013/024 VUs  0m19.0s/1m0s  20.00 iters/s
+refunds    [  32% ] 05/10 VUs    0m19.0s/1m0s  2.00 iters/s
+retries    [  32% ] 03/10 VUs    0m19.0s/1m0s  2.00 iters/s
+
+running (0m20.0s), 219/244 VUs, 3205 complete and 0 interrupted iterations
+payments   [  33% ] 199/200 VUs  0m20.0s/1m0s  200.00 iters/s
+reads      [  33% ] 014/024 VUs  0m20.0s/1m0s  20.00 iters/s
+refunds    [  33% ] 04/10 VUs    0m20.0s/1m0s  2.00 iters/s
+retries    [  33% ] 02/10 VUs    0m20.0s/1m0s  2.00 iters/s
+
+running (0m21.0s), 209/244 VUs, 3412 complete and 0 interrupted iterations
+payments   [  35% ] 195/200 VUs  0m21.0s/1m0s  200.00 iters/s
+reads      [  35% ] 009/024 VUs  0m21.0s/1m0s  20.00 iters/s
+refunds    [  35% ] 03/10 VUs    0m21.0s/1m0s  2.00 iters/s
+retries    [  35% ] 02/10 VUs    0m21.0s/1m0s  2.00 iters/s
+
+running (0m22.0s), 219/244 VUs, 3557 complete and 0 interrupted iterations
+payments   [  37% ] 197/200 VUs  0m22.0s/1m0s  200.00 iters/s
+reads      [  37% ] 015/024 VUs  0m22.0s/1m0s  20.00 iters/s
+refunds    [  37% ] 04/10 VUs    0m22.0s/1m0s  2.00 iters/s
+retries    [  37% ] 03/10 VUs    0m22.0s/1m0s  2.00 iters/s
+
+running (0m23.0s), 229/244 VUs, 3642 complete and 0 interrupted iterations
+payments   [  38% ] 200/200 VUs  0m23.0s/1m0s  200.00 iters/s
+reads      [  38% ] 021/024 VUs  0m23.0s/1m0s  20.00 iters/s
+refunds    [  38% ] 04/10 VUs    0m23.0s/1m0s  2.00 iters/s
+retries    [  38% ] 04/10 VUs    0m23.0s/1m0s  2.00 iters/s
+
+running (0m24.0s), 230/244 VUs, 3759 complete and 0 interrupted iterations
+payments   [  40% ] 200/200 VUs  0m24.0s/1m0s  200.00 iters/s
+reads      [  40% ] 020/024 VUs  0m24.0s/1m0s  20.00 iters/s
+refunds    [  40% ] 05/10 VUs    0m24.0s/1m0s  2.00 iters/s
+retries    [  40% ] 05/10 VUs    0m24.0s/1m0s  2.00 iters/s
+
+running (0m25.0s), 234/245 VUs, 3855 complete and 0 interrupted iterations
+payments   [  42% ] 198/200 VUs  0m25.0s/1m0s  200.00 iters/s
+reads      [  42% ] 024/025 VUs  0m25.0s/1m0s  20.00 iters/s
+refunds    [  42% ] 06/10 VUs    0m25.0s/1m0s  2.00 iters/s
+retries    [  42% ] 06/10 VUs    0m25.0s/1m0s  2.00 iters/s
+
+running (0m26.0s), 224/245 VUs, 3997 complete and 0 interrupted iterations
+payments   [  43% ] 199/200 VUs  0m26.0s/1m0s  200.00 iters/s
+reads      [  43% ] 014/025 VUs  0m26.0s/1m0s  20.00 iters/s
+refunds    [  43% ] 07/10 VUs    0m26.0s/1m0s  2.00 iters/s
+retries    [  43% ] 04/10 VUs    0m26.0s/1m0s  2.00 iters/s
+
+running (0m27.0s), 237/246 VUs, 4087 complete and 0 interrupted iterations
+payments   [  45% ] 200/200 VUs  0m27.0s/1m0s  200.00 iters/s
+reads      [  45% ] 024/026 VUs  0m27.0s/1m0s  20.00 iters/s
+refunds    [  45% ] 07/10 VUs    0m27.0s/1m0s  2.00 iters/s
+retries    [  45% ] 06/10 VUs    0m27.0s/1m0s  2.00 iters/s
+
+running (0m28.0s), 226/246 VUs, 4222 complete and 0 interrupted iterations
+payments   [  47% ] 200/200 VUs  0m28.0s/1m0s  200.00 iters/s
+reads      [  47% ] 015/026 VUs  0m28.0s/1m0s  20.00 iters/s
+refunds    [  47% ] 05/10 VUs    0m28.0s/1m0s  2.00 iters/s
+retries    [  47% ] 06/10 VUs    0m28.0s/1m0s  2.00 iters/s
+
+running (0m29.0s), 229/246 VUs, 4329 complete and 0 interrupted iterations
+payments   [  48% ] 200/200 VUs  0m29.0s/1m0s  200.00 iters/s
+reads      [  48% ] 020/026 VUs  0m29.0s/1m0s  20.00 iters/s
+refunds    [  48% ] 06/10 VUs    0m29.0s/1m0s  2.00 iters/s
+retries    [  48% ] 03/10 VUs    0m29.0s/1m0s  2.00 iters/s
+
+running (0m30.0s), 219/246 VUs, 4481 complete and 0 interrupted iterations
+payments   [  50% ] 198/200 VUs  0m30.0s/1m0s  200.00 iters/s
+reads      [  50% ] 012/026 VUs  0m30.0s/1m0s  20.00 iters/s
+refunds    [  50% ] 05/10 VUs    0m30.0s/1m0s  2.00 iters/s
+retries    [  50% ] 04/10 VUs    0m30.0s/1m0s  2.00 iters/s
+
+running (0m31.0s), 223/246 VUs, 4640 complete and 0 interrupted iterations
+payments   [  52% ] 198/200 VUs  0m31.0s/1m0s  200.00 iters/s
+reads      [  52% ] 016/026 VUs  0m31.0s/1m0s  20.00 iters/s
+refunds    [  52% ] 05/10 VUs    0m31.0s/1m0s  2.00 iters/s
+retries    [  52% ] 04/10 VUs    0m31.0s/1m0s  2.00 iters/s
+
+running (0m32.0s), 225/246 VUs, 4747 complete and 0 interrupted iterations
+payments   [  53% ] 199/200 VUs  0m32.0s/1m0s  200.00 iters/s
+reads      [  53% ] 017/026 VUs  0m32.0s/1m0s  20.00 iters/s
+refunds    [  53% ] 05/10 VUs    0m32.0s/1m0s  2.00 iters/s
+retries    [  53% ] 04/10 VUs    0m32.0s/1m0s  2.00 iters/s
+
+running (0m33.0s), 239/247 VUs, 4823 complete and 0 interrupted iterations
+payments   [  55% ] 200/200 VUs  0m33.0s/1m0s  200.00 iters/s
+reads      [  55% ] 027/027 VUs  0m33.0s/1m0s  20.00 iters/s
+refunds    [  55% ] 06/10 VUs    0m33.0s/1m0s  2.00 iters/s
+retries    [  55% ] 06/10 VUs    0m33.0s/1m0s  2.00 iters/s
+
+running (0m34.0s), 241/248 VUs, 4903 complete and 0 interrupted iterations
+payments   [  57% ] 200/200 VUs  0m34.0s/1m0s  200.00 iters/s
+reads      [  57% ] 028/028 VUs  0m34.0s/1m0s  20.00 iters/s
+refunds    [  57% ] 07/10 VUs    0m34.0s/1m0s  2.00 iters/s
+retries    [  57% ] 06/10 VUs    0m34.0s/1m0s  2.00 iters/s
+
+running (0m35.0s), 242/251 VUs, 4976 complete and 0 interrupted iterations
+payments   [  58% ] 200/200 VUs  0m35.0s/1m0s  200.00 iters/s
+reads      [  58% ] 028/031 VUs  0m35.0s/1m0s  20.00 iters/s
+refunds    [  58% ] 08/10 VUs    0m35.0s/1m0s  2.00 iters/s
+retries    [  58% ] 06/10 VUs    0m35.0s/1m0s  2.00 iters/s
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+
+running (0m36.0s), 235/251 VUs, 5103 complete and 0 interrupted iterations
+payments   [  60% ] 200/200 VUs  0m36.0s/1m0s  200.00 iters/s
+reads      [  60% ] 020/031 VUs  0m36.0s/1m0s  20.00 iters/s
+refunds    [  60% ] 08/10 VUs    0m36.0s/1m0s  2.00 iters/s
+retries    [  60% ] 07/10 VUs    0m36.0s/1m0s  2.00 iters/s
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+time="2026-10-22T19:47:07Z" level=warning msg="Request Failed" error="Post \"http://host.docker.internal:8080/api/v1/orders\": dial: i/o timeout"
+time="2026-10-22T19:47:07Z" level=warning msg="FAILED POST /orders status=0 error=dial: i/o timeout body=" source=console
+time="2026-10-22T19:47:07Z" level=error msg="GoError: the body is null so we can't transform it to JSON - this likely was because of a request error getting the response\n\tat reflect.methodValueCall (native)\n\tat createOrder (file:///scripts/finflow.js:76:18(68))\n\tat payments (file:///scripts/finflow.js:86:30(9))\n" executor=constant-arrival-rate hint="script exception" scenario=payments source=stacktrace
+
+running (0m37.0s), 236/251 VUs, 5212 complete and 0 interrupted iterations
+payments   [  62% ] 200/200 VUs  0m37.0s/1m0s  200.00 iters/s
+reads      [  62% ] 021/031 VUs  0m37.0s/1m0s  20.00 iters/s
+refunds    [  62% ] 09/10 VUs    0m37.0s/1m0s  2.00 iters/s
+retries    [  62% ] 06/10 VUs    0m37.0s/1m0s  2.00 iters/s
+
+running (0m38.0s), 240/251 VUs, 5282 complete and 0 interrupted iterations
+payments   [  63% ] 200/200 VUs  0m38.0s/1m0s  200.00 iters/s
+reads      [  63% ] 026/031 VUs  0m38.0s/1m0s  20.00 iters/s
+refunds    [  63% ] 08/10 VUs    0m38.0s/1m0s  2.00 iters/s
+retries    [  63% ] 06/10 VUs    0m38.0s/1m0s  2.00 iters/s
+
+running (0m39.0s), 228/251 VUs, 5420 complete and 0 interrupted iterations
+payments   [  65% ] 198/200 VUs  0m39.0s/1m0s  200.00 iters/s
+reads      [  65% ] 016/031 VUs  0m39.0s/1m0s  20.00 iters/s
+refunds    [  65% ] 08/10 VUs    0m39.0s/1m0s  2.00 iters/s
+retries    [  65% ] 06/10 VUs    0m39.0s/1m0s  2.00 iters/s
+
+running (0m40.0s), 231/251 VUs, 5523 complete and 0 interrupted iterations
+payments   [  67% ] 200/200 VUs  0m40.0s/1m0s  200.00 iters/s
+reads      [  67% ] 018/031 VUs  0m40.0s/1m0s  20.00 iters/s
+refunds    [  67% ] 07/10 VUs    0m40.0s/1m0s  2.00 iters/s
+retries    [  67% ] 06/10 VUs    0m40.0s/1m0s  2.00 iters/s
+
+running (0m41.0s), 228/251 VUs, 5652 complete and 0 interrupted iterations
+payments   [  68% ] 199/200 VUs  0m41.0s/1m0s  200.00 iters/s
+reads      [  68% ] 017/031 VUs  0m41.0s/1m0s  20.00 iters/s
+refunds    [  68% ] 07/10 VUs    0m41.0s/1m0s  2.00 iters/s
+retries    [  68% ] 05/10 VUs    0m41.0s/1m0s  2.00 iters/s
+
+running (0m42.0s), 228/251 VUs, 5763 complete and 0 interrupted iterations
+payments   [  70% ] 199/200 VUs  0m42.0s/1m0s  200.00 iters/s
+reads      [  70% ] 017/031 VUs  0m42.0s/1m0s  20.00 iters/s
+refunds    [  70% ] 07/10 VUs    0m42.0s/1m0s  2.00 iters/s
+retries    [  70% ] 05/10 VUs    0m42.0s/1m0s  2.00 iters/s
+
+running (0m43.0s), 237/251 VUs, 5866 complete and 0 interrupted iterations
+payments   [  72% ] 200/200 VUs  0m43.0s/1m0s  200.00 iters/s
+reads      [  72% ] 026/031 VUs  0m43.0s/1m0s  20.00 iters/s
+refunds    [  72% ] 06/10 VUs    0m43.0s/1m0s  2.00 iters/s
+retries    [  72% ] 05/10 VUs    0m43.0s/1m0s  2.00 iters/s
+
+running (0m44.0s), 242/251 VUs, 5950 complete and 0 interrupted iterations
+payments   [  73% ] 200/200 VUs  0m44.0s/1m0s  200.00 iters/s
+reads      [  73% ] 030/031 VUs  0m44.0s/1m0s  20.00 iters/s
+refunds    [  73% ] 06/10 VUs    0m44.0s/1m0s  2.00 iters/s
+retries    [  73% ] 06/10 VUs    0m44.0s/1m0s  2.00 iters/s
+
+running (0m45.0s), 237/253 VUs, 6046 complete and 0 interrupted iterations
+payments   [  75% ] 200/200 VUs  0m45.0s/1m0s  200.00 iters/s
+reads      [  75% ] 024/033 VUs  0m45.0s/1m0s  20.00 iters/s
+refunds    [  75% ] 06/10 VUs    0m45.0s/1m0s  2.00 iters/s
+retries    [  75% ] 07/10 VUs    0m45.0s/1m0s  2.00 iters/s
+
+running (0m46.0s), 237/253 VUs, 6150 complete and 0 interrupted iterations
+payments   [  77% ] 200/200 VUs  0m46.0s/1m0s  200.00 iters/s
+reads      [  77% ] 024/033 VUs  0m46.0s/1m0s  20.00 iters/s
+refunds    [  77% ] 07/10 VUs    0m46.0s/1m0s  2.00 iters/s
+retries    [  77% ] 06/10 VUs    0m46.0s/1m0s  2.00 iters/s
+
+running (0m47.0s), 242/253 VUs, 6231 complete and 0 interrupted iterations
+payments   [  78% ] 200/200 VUs  0m47.0s/1m0s  200.00 iters/s
+reads      [  78% ] 026/033 VUs  0m47.0s/1m0s  20.00 iters/s
+refunds    [  78% ] 09/10 VUs    0m47.0s/1m0s  2.00 iters/s
+retries    [  78% ] 07/10 VUs    0m47.0s/1m0s  2.00 iters/s
+
+running (0m48.0s), 243/253 VUs, 6324 complete and 0 interrupted iterations
+payments   [  80% ] 200/200 VUs  0m48.0s/1m0s  200.00 iters/s
+reads      [  80% ] 028/033 VUs  0m48.0s/1m0s  20.00 iters/s
+refunds    [  80% ] 08/10 VUs    0m48.0s/1m0s  2.00 iters/s
+retries    [  80% ] 07/10 VUs    0m48.0s/1m0s  2.00 iters/s
+
+running (0m49.0s), 246/253 VUs, 6421 complete and 0 interrupted iterations
+payments   [  82% ] 200/200 VUs  0m49.0s/1m0s  200.00 iters/s
+reads      [  82% ] 031/033 VUs  0m49.0s/1m0s  20.00 iters/s
+refunds    [  82% ] 09/10 VUs    0m49.0s/1m0s  2.00 iters/s
+retries    [  82% ] 06/10 VUs    0m49.0s/1m0s  2.00 iters/s
+
+running (0m50.0s), 243/254 VUs, 6502 complete and 0 interrupted iterations
+payments   [  83% ] 199/200 VUs  0m50.0s/1m0s  200.00 iters/s
+reads      [  83% ] 026/033 VUs  0m50.0s/1m0s  20.00 iters/s
+refunds    [  83% ] 10/11 VUs    0m50.0s/1m0s  2.00 iters/s
+retries    [  83% ] 08/10 VUs    0m50.0s/1m0s  2.00 iters/s
+
+running (0m51.0s), 236/254 VUs, 6620 complete and 0 interrupted iterations
+payments   [  85% ] 200/200 VUs  0m51.0s/1m0s  200.00 iters/s
+reads      [  85% ] 022/033 VUs  0m51.0s/1m0s  20.00 iters/s
+refunds    [  85% ] 08/11 VUs    0m51.0s/1m0s  2.00 iters/s
+retries    [  85% ] 06/10 VUs    0m51.0s/1m0s  2.00 iters/s
+
+running (0m52.0s), 236/254 VUs, 6739 complete and 0 interrupted iterations
+payments   [  87% ] 200/200 VUs  0m52.0s/1m0s  200.00 iters/s
+reads      [  87% ] 025/033 VUs  0m52.0s/1m0s  20.00 iters/s
+refunds    [  87% ] 06/11 VUs    0m52.0s/1m0s  2.00 iters/s
+retries    [  87% ] 05/10 VUs    0m52.0s/1m0s  2.00 iters/s
+
+running (0m53.0s), 236/254 VUs, 6836 complete and 0 interrupted iterations
+payments   [  88% ] 200/200 VUs  0m53.0s/1m0s  200.00 iters/s
+reads      [  88% ] 024/033 VUs  0m53.0s/1m0s  20.00 iters/s
+refunds    [  88% ] 07/11 VUs    0m53.0s/1m0s  2.00 iters/s
+retries    [  88% ] 05/10 VUs    0m53.0s/1m0s  2.00 iters/s
+
+running (0m54.0s), 242/254 VUs, 6940 complete and 0 interrupted iterations
+payments   [  90% ] 200/200 VUs  0m54.0s/1m0s  200.00 iters/s
+reads      [  90% ] 028/033 VUs  0m54.0s/1m0s  20.00 iters/s
+refunds    [  90% ] 08/11 VUs    0m54.0s/1m0s  2.00 iters/s
+retries    [  90% ] 06/10 VUs    0m54.0s/1m0s  2.00 iters/s
+
+running (0m55.0s), 243/256 VUs, 7006 complete and 0 interrupted iterations
+payments   [  92% ] 200/200 VUs  0m55.0s/1m0s  200.00 iters/s
+reads      [  92% ] 030/035 VUs  0m55.0s/1m0s  20.00 iters/s
+refunds    [  92% ] 07/11 VUs    0m55.0s/1m0s  2.00 iters/s
+retries    [  92% ] 06/10 VUs    0m55.0s/1m0s  2.00 iters/s
+
+running (0m56.0s), 246/257 VUs, 7080 complete and 0 interrupted iterations
+payments   [  93% ] 200/200 VUs  0m56.0s/1m0s  200.00 iters/s
+reads      [  93% ] 031/036 VUs  0m56.0s/1m0s  20.00 iters/s
+refunds    [  93% ] 08/11 VUs    0m56.0s/1m0s  2.00 iters/s
+retries    [  93% ] 07/10 VUs    0m56.0s/1m0s  2.00 iters/s
+
+running (0m57.0s), 248/257 VUs, 7174 complete and 0 interrupted iterations
+payments   [  95% ] 199/200 VUs  0m57.0s/1m0s  200.00 iters/s
+reads      [  95% ] 032/036 VUs  0m57.0s/1m0s  20.00 iters/s
+refunds    [  95% ] 09/11 VUs    0m57.0s/1m0s  2.00 iters/s
+retries    [  95% ] 08/10 VUs    0m57.0s/1m0s  2.00 iters/s
+
+running (0m58.0s), 248/257 VUs, 7261 complete and 0 interrupted iterations
+payments   [  97% ] 200/200 VUs  0m58.0s/1m0s  200.00 iters/s
+reads      [  97% ] 029/036 VUs  0m58.0s/1m0s  20.00 iters/s
+refunds    [  97% ] 10/11 VUs    0m58.0s/1m0s  2.00 iters/s
+retries    [  97% ] 09/10 VUs    0m58.0s/1m0s  2.00 iters/s
+
+running (0m59.0s), 250/257 VUs, 7347 complete and 0 interrupted iterations
+payments   [  98% ] 200/200 VUs  0m59.0s/1m0s  200.00 iters/s
+reads      [  98% ] 033/036 VUs  0m59.0s/1m0s  20.00 iters/s
+refunds    [  98% ] 09/11 VUs    0m59.0s/1m0s  2.00 iters/s
+retries    [  98% ] 08/10 VUs    0m59.0s/1m0s  2.00 iters/s
+
+running (1m00.0s), 246/257 VUs, 7430 complete and 0 interrupted iterations
+payments   [ 100% ] 200/200 VUs  1m00.0s/1m0s  200.00 iters/s
+reads      [ 100% ] 027/036 VUs  1m00.0s/1m0s  20.00 iters/s
+refunds    [ 100% ] 10/11 VUs    1m00.0s/1m0s  2.00 iters/s
+retries    [ 100% ] 09/10 VUs    1m00.0s/1m0s  2.00 iters/s
+
+running (1m01.0s), 115/257 VUs, 7564 complete and 0 interrupted iterations
+payments ↓ [ 100% ] 200/200 VUs  1m0s  200.00 iters/s
+reads    ✓ [ 100% ] 000/036 VUs  1m0s  20.00 iters/s
+refunds  ↓ [ 100% ] 11/11 VUs    1m0s  2.00 iters/s
+retries  ↓ [ 100% ] 10/10 VUs    1m0s  2.00 iters/s
+
+
+  █ THRESHOLDS 
+
+    duplicate_payments
+    ✓ 'count==0' count=0
+
+    http_req_duration{name:GET /dashboard/summary}
+    ✓ 'p(95)<2000' p(95)=1.66s
+
+    http_req_duration{name:GET /payments}
+    ✓ 'p(95)<2000' p(95)=473.09ms
+
+    http_req_duration{name:POST /orders}
+    ✓ 'p(95)<2000' p(95)=398.81ms
+
+    http_req_duration{name:POST /payments}
+    ✓ 'p(95)<5000' p(95)=2.99s
+
+    http_req_duration{name:POST /refunds}
+    ✓ 'p(95)<5000' p(95)=2.01s
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.07%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 15589  251.807164/s
+    checks_succeeded...: 99.92% 15577 out of 15589
+    checks_failed......: 0.07%  12 out of 15589
+
+    ✓ demo session
+    ✗ order 201
+      ↳  99% — ✓ 6483 / ✗ 12
+    ✓ dashboard 200
+    ✓ list 200
+    ✓ retry answered
+    ✓ payment captured
+    ✓ refund succeeded
+
+    CUSTOM
+    duplicate_payments..................: 0      0/s
+    payment_flow_ms.....................: avg=1.76s    min=249ms    med=1.75s    p(90)=2.96s    p(95)=3.26s    p(99)=3.78s    max=4.41s
+
+    HTTP
+    http_req_duration...................: avg=809.03ms min=0s       med=315.85ms p(90)=2.22s    p(95)=2.62s    p(99)=3.25s    max=4.25s
+      { expected_response:true }........: avg=809.65ms min=689.95µs med=316.25ms p(90)=2.22s    p(95)=2.62s    p(99)=3.25s    max=4.25s
+      { name:GET /dashboard/summary }...: avg=772.9ms  min=3.02ms   med=758.82ms p(90)=1.41s    p(95)=1.66s    p(99)=2.04s    max=2.94s
+      { name:GET /payments }............: avg=193.86ms min=1.76ms   med=170.6ms  p(90)=384.47ms p(95)=473.09ms p(99)=740.59ms max=1.03s
+      { name:POST /orders }.............: avg=157.38ms min=0s       med=142.04ms p(90)=308.27ms p(95)=398.81ms p(99)=619.28ms max=1.37s
+      { name:POST /payments }...........: avg=1.55s    min=852.83µs med=1.55s    p(90)=2.69s    p(95)=2.99s    p(99)=3.49s    max=4.25s
+      { name:POST /refunds }............: avg=1.11s    min=126.45ms med=1.11s    p(90)=1.82s    p(95)=2.01s    p(99)=2.33s    max=2.47s
+    http_req_failed.....................: 0.07%  12 out of 15830
+    http_reqs...........................: 15830  255.700007/s
+
+    EXECUTION
+    dropped_iterations..................: 5763   93.089017/s
+    iteration_duration..................: avg=1.71s    min=12.21ms  med=1.6s     p(90)=2.95s    p(95)=3.29s    p(99)=4.05s    max=30s  
+    iterations..........................: 7679   124.037925/s
+    vus.................................: 115    min=58          max=250
+    vus_max.............................: 257    min=98          max=257
+
+    NETWORK
+    data_received.......................: 32 MB  509 kB/s
+    data_sent...........................: 5.0 MB 81 kB/s
+
+
+
+
+running (1m01.9s), 000/257 VUs, 7679 complete and 0 interrupted iterations
+payments ✓ [ 100% ] 000/200 VUs  1m0s  200.00 iters/s
+reads    ✓ [ 100% ] 000/036 VUs  1m0s  20.00 iters/s
+refunds  ✓ [ 100% ] 00/11 VUs    1m0s  2.00 iters/s
+retries  ✓ [ 100% ] 00/10 VUs    1m0s  2.00 iters/s

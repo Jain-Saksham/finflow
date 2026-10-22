@@ -30,7 +30,7 @@ class JournalTest {
 
     @Test
     void unbalancedJournalCannotBeBuilt() {
-        assertThatThrownBy(() -> new Journal(JournalType.CAPTURE, merchant, payment, null, "USD", "bad", List.of(
+        assertThatThrownBy(() -> new Journal(JournalType.CAPTURE, merchant, payment, null, null, "USD", "bad", List.of(
                 new Journal.Line(LedgerAccount.PROVIDER_RECEIVABLE, EntryDirection.DEBIT, 100),
                 new Journal.Line(LedgerAccount.MERCHANT_BALANCE, EntryDirection.CREDIT, 99))))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -45,7 +45,7 @@ class JournalTest {
 
     @Test
     void refundJournalMustReferenceARefund() {
-        assertThatThrownBy(() -> new Journal(JournalType.REFUND, merchant, payment, null, "USD", "x", List.of(
+        assertThatThrownBy(() -> new Journal(JournalType.REFUND, merchant, payment, null, null, "USD", "x", List.of(
                 new Journal.Line(LedgerAccount.MERCHANT_BALANCE, EntryDirection.DEBIT, 1),
                 new Journal.Line(LedgerAccount.PROVIDER_RECEIVABLE, EntryDirection.CREDIT, 1))))
                 .isInstanceOf(IllegalArgumentException.class);

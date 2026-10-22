@@ -6,9 +6,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.finflow.merchant.ApiKeys;
 import com.finflow.merchant.Merchant;
 import com.finflow.merchant.MerchantRepository;
+import com.finflow.provider.SimulatorSettings;
+import org.junit.jupiter.api.AfterEach;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.UUID;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -17,6 +25,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.lifecycle.Startables;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
@@ -24,20 +35,44 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * and the provider simulator's artificial latency/timeout delay set to zero. Each test creates its
  * own merchant, so tests are isolated without truncating tables.
  */
-@SpringBootTest(properties = {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "finflow.demo.seed=false",
+        // Every cached test context rotates the single demo merchant's key; a fixed key keeps them all
+        // valid (the same reason multi-instance deployments must set FINFLOW_DEMO_API_KEY).
+        "finflow.demo.api-key=ff_test_integration_demo_key_0123456789abcdef",
         "finflow.simulator.latency-ms=0",
-        "finflow.simulator.timeout-ms=0"
+        "finflow.simulator.timeout-ms=0",
+        // Background workers that tests drive explicitly (or enable per test) for determinism.
+        "finflow.recovery.auto-sync-enabled=false",
+        "finflow.recovery.auto-sync-delay=0s",
+        "finflow.webhooks.worker-enabled=false",
+        "finflow.webhooks.retry-schedule=0s,0s,0s",
+        "finflow.reconciliation.schedule-enabled=false",
+        "finflow.reconciliation.stale-after=0s",
+        "finflow.outbox.poll-interval=100ms",
+        "finflow.kafka.consumer-retry-backoff=100ms",
+        "finflow.rate-limit.requests-per-minute=100000",
+        "finflow.rate-limit.writes-per-minute=100000",
+        "finflow.rate-limit.public-per-minute=100000",
+        "finflow.ops.token=" + IntegrationTestBase.OPS_TOKEN
 })
 @AutoConfigureMockMvc
 public abstract class IntegrationTestBase {
 
-    // One container for the whole test run; Spring caches the context across test classes.
+    public static final String OPS_TOKEN = "test-ops-token";
+
+    // One set of containers for the whole run; Spring caches the context across test classes.
     @ServiceConnection
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17-alpine");
 
+    @ServiceConnection
+    protected static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka-native:4.2.2");
+
+    @ServiceConnection(name = "redis")
+    protected static final GenericContainer<?> REDIS = new GenericContainer<>("redis:8.6-alpine").withExposedPorts(6379);
+
     static {
-        POSTGRES.start();
+        Startables.deepStart(POSTGRES, KAFKA, REDIS).join();
     }
 
     @Autowired
@@ -45,6 +80,44 @@ public abstract class IntegrationTestBase {
 
     @Autowired
     protected MerchantRepository merchants;
+
+    @Autowired
+    protected SimulatorSettings simulator;
+
+    @Autowired
+    protected JdbcTemplate jdbc;
+
+    @LocalServerPort
+    protected int port;
+
+    private final HttpClient http = HttpClient.newHttpClient();
+
+    /** Real HTTP (not MockMvc) for tests that need genuinely concurrent requests. */
+    protected HttpResponse<String> httpPost(String apiKey, String path, String json, String idempotencyKey) {
+        try {
+            var builder = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json));
+            if (apiKey != null) {
+                builder.header("X-API-Key", apiKey);
+            }
+            if (idempotencyKey != null) {
+                builder.header("Idempotency-Key", idempotencyKey);
+            }
+            return http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    protected UUID merchantIdOf(String apiKey) {
+        return merchants.findByApiKeyHash(ApiKeys.hash(apiKey)).orElseThrow().getId();
+    }
+
+    @AfterEach
+    void resetSimulator() {
+        simulator.reset();
+    }
 
     protected String newMerchantKey() {
         String key = ApiKeys.generate();

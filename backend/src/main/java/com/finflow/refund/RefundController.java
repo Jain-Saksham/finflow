@@ -1,5 +1,6 @@
 package com.finflow.refund;
 
+import com.finflow.idempotency.IdempotencyService;
 import com.finflow.payment.PaymentController;
 import com.finflow.refund.RefundDtos.CreateRefundRequest;
 import com.finflow.refund.RefundDtos.RefundResponse;
@@ -27,9 +28,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class RefundController {
 
     private final RefundService refundService;
+    private final IdempotencyService idempotency;
 
-    public RefundController(RefundService refundService) {
+    public RefundController(RefundService refundService, IdempotencyService idempotency) {
         this.refundService = refundService;
+        this.idempotency = idempotency;
+    }
+
+    record RefundFingerprint(UUID paymentId, Long amountMinor, String reason) {
     }
 
     @PostMapping
@@ -43,12 +49,21 @@ public class RefundController {
             @Pattern(regexp = PaymentController.IDEMPOTENCY_KEY_PATTERN, message = PaymentController.IDEMPOTENCY_KEY_MESSAGE)
             String idempotencyKey,
             @Valid @RequestBody CreateRefundRequest request) {
-        RefundService.CreateResult result = refundService.create(merchant.merchantId(), paymentId, idempotencyKey, request);
-        RefundResponse body = RefundResponse.from(result.refund());
-        if (result.replayed()) {
-            return ResponseEntity.ok().header("Idempotent-Replayed", "true").body(body);
+        var outcome = idempotency.execute(merchant.merchantId(), idempotencyKey, "refunds.create",
+                new RefundFingerprint(paymentId, request.amountMinor(), request.reason()), RefundResponse.class, () -> {
+                    RefundService.CreateResult result =
+                            refundService.create(merchant.merchantId(), paymentId, idempotencyKey, request);
+                    return new IdempotencyService.Outcome<>(RefundResponse.from(result.refund()),
+                            result.replayed() ? 200 : 201, result.replayed(), result.refund().getId());
+                });
+        var builder = ResponseEntity.status(outcome.status());
+        if (outcome.status() == 201) {
+            builder.location(URI.create("/api/v1/payments/" + paymentId + "/refunds/" + outcome.resourceId()));
         }
-        return ResponseEntity.created(URI.create("/api/v1/payments/" + paymentId + "/refunds/" + body.id())).body(body);
+        if (outcome.replayed()) {
+            builder.header("Idempotent-Replayed", "true");
+        }
+        return builder.body(outcome.body());
     }
 
     @GetMapping

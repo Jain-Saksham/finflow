@@ -1,7 +1,6 @@
 package com.finflow.security;
 
 import com.finflow.merchant.ApiKeys;
-import com.finflow.merchant.MerchantRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,10 +20,10 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String HEADER = "X-API-Key";
 
-    private final MerchantRepository merchants;
+    private final ApiKeyResolver resolver;
 
-    public ApiKeyAuthenticationFilter(MerchantRepository merchants) {
-        this.merchants = merchants;
+    public ApiKeyAuthenticationFilter(ApiKeyResolver resolver) {
+        this.resolver = resolver;
     }
 
     @Override
@@ -32,12 +31,12 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String apiKey = request.getHeader(HEADER);
         if (apiKey != null && !apiKey.isBlank()) {
-            merchants.findByApiKeyHash(ApiKeys.hash(apiKey.strip())).ifPresent(merchant -> {
-                var principal = new MerchantPrincipal(merchant.getId(), merchant.getName(), merchant.isDemo());
+            MerchantPrincipal principal = resolver.resolve(ApiKeys.hash(apiKey.strip()));
+            if (principal != null) {
                 var auth = new PreAuthenticatedAuthenticationToken(
                         principal, null, List.of(new SimpleGrantedAuthority("ROLE_MERCHANT")));
                 SecurityContextHolder.getContext().setAuthentication(auth);
-            });
+            }
         }
         chain.doFilter(request, response);
     }

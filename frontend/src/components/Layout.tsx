@@ -19,6 +19,8 @@ const NAV = [
   { to: '/orders', label: 'Orders', icon: 'orders', end: false },
   { to: '/orders/new', label: 'New order', icon: 'plus', end: true },
   { to: '/ledger', label: 'Ledger', icon: 'ledger', end: false },
+  { to: '/webhooks', label: 'Webhooks', icon: 'webhook', end: false },
+  { to: '/reconciliation', label: 'Reconciliation', icon: 'scale', end: false },
 ] as const;
 
 export function Layout() {

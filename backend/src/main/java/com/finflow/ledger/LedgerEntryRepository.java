@@ -13,6 +13,12 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long> 
 
     Page<LedgerEntry> findByMerchantIdAndPaymentId(UUID merchantId, UUID paymentId, Pageable pageable);
 
+    List<LedgerEntry> findByMerchantIdAndJournalIdOrderByIdAsc(UUID merchantId, UUID journalId);
+
+    boolean existsByReversesJournalId(UUID journalId);
+
+    List<LedgerEntry> findByMerchantId(UUID merchantId);
+
     interface AccountTotal {
         LedgerAccount getAccount();
 

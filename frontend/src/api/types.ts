@@ -169,3 +169,88 @@ export interface DashboardSummary {
   failureReasons: { code: string; count: number }[];
   recentPayments: Payment[];
 }
+
+export type SimulatedBehavior = 'ALWAYS_SUCCEED' | 'FAIL_FIRST_ATTEMPT' | 'FAIL_FIRST_THREE' | 'ALWAYS_FAIL';
+export type DeliveryStatus = 'PENDING' | 'IN_PROGRESS' | 'RETRYING' | 'SUCCEEDED' | 'FAILED';
+
+export interface WebhookEndpoint {
+  id: string;
+  url: string;
+  description: string | null;
+  enabled: boolean;
+  simulatedBehavior: SimulatedBehavior | null;
+  secret: string | null;
+  secretPreview: string;
+  createdAt: string;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  endpointId: string;
+  endpointUrl: string;
+  eventId: string;
+  eventType: string;
+  paymentId: string | null;
+  status: DeliveryStatus;
+  attemptCount: number;
+  nextAttemptAt: string | null;
+  lastResponseStatus: number | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+  succeededAt: string | null;
+}
+
+export interface DeliveryAttempt {
+  attemptNo: number;
+  outcome: 'SUCCEEDED' | 'FAILED';
+  responseStatus: number | null;
+  responseBody: string | null;
+  error: string | null;
+  durationMs: number;
+  startedAt: string;
+}
+
+export interface DeliveryDetail {
+  delivery: WebhookDelivery;
+  attempts: DeliveryAttempt[];
+  maxAttempts: number;
+}
+
+export interface ReconciliationRun {
+  id: string;
+  trigger: 'MANUAL' | 'SCHEDULED' | 'OPS';
+  status: 'RUNNING' | 'COMPLETED' | 'FAILED';
+  providerTransactions: number | null;
+  internalPayments: number | null;
+  matchedPayments: number | null;
+  inFlightSkipped: number | null;
+  staleAfterSeconds: number;
+  findingsTotal: number | null;
+  autoResolved: number | null;
+  openFindings: number | null;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface ReconciliationFinding {
+  id: number;
+  type: string;
+  severity: 'INFO' | 'WARNING' | 'CRITICAL';
+  recoverable: boolean;
+  resolution: 'AUTO_RESOLVED' | 'OPEN' | 'RESOLUTION_FAILED';
+  paymentId: string | null;
+  refundId: string | null;
+  providerReference: string | null;
+  expected: string | null;
+  actual: string | null;
+  detail: string;
+  resolutionDetail: string | null;
+  createdAt: string;
+}
+
+export interface ReconciliationReport {
+  run: ReconciliationRun;
+  findings: ReconciliationFinding[];
+}

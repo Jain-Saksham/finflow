@@ -1,5 +1,7 @@
 package com.finflow.ledger;
 
+import com.finflow.common.error.ApiException;
+import com.finflow.common.error.ErrorCode;
 import com.finflow.common.persistence.AuditedEntity;
 import com.finflow.ledger.LedgerEntryRepository.AccountTotal;
 import java.time.Instant;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,10 +32,42 @@ public class LedgerService {
      * the payment/refund state change that caused it.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public void post(Journal journal) {
+    public UUID post(Journal journal) {
+        // Balance is also enforced by a deferred constraint trigger at COMMIT (V2 migration).
         UUID journalId = UUID.randomUUID();
         Instant now = AuditedEntity.now();
         entries.saveAll(journal.lines().stream().map(line -> new LedgerEntry(journalId, journal, line, now)).toList());
+        return journalId;
+    }
+
+    /**
+     * Corrects a posted journal by posting its mirror image. The original stays untouched, so the
+     * audit trail shows both the mistake and the correction. A journal can be reversed once (unique
+     * index), and reversals themselves cannot be reversed.
+     */
+    @Transactional
+    public UUID reverse(UUID merchantId, UUID journalId, String reason) {
+        List<LedgerEntry> original = entries.findByMerchantIdAndJournalIdOrderByIdAsc(merchantId, journalId);
+        if (original.isEmpty()) {
+            throw ApiException.notFound("Ledger journal", journalId);
+        }
+        if (original.getFirst().getJournalType() == JournalType.REVERSAL) {
+            throw new ApiException(ErrorCode.INVALID_STATE_TRANSITION, "A reversal cannot itself be reversed");
+        }
+        if (entries.existsByReversesJournalId(journalId)) {
+            throw alreadyReversed(journalId);
+        }
+        try {
+            UUID reversalId = post(Journal.reversalOf(journalId, original, reason));
+            entries.flush();
+            return reversalId;
+        } catch (DataIntegrityViolationException e) {
+            throw alreadyReversed(journalId); // a concurrent reversal won (ux_ledger_reversal_once)
+        }
+    }
+
+    private static ApiException alreadyReversed(UUID journalId) {
+        return new ApiException(ErrorCode.LEDGER_JOURNAL_ALREADY_REVERSED, "Journal " + journalId + " was already reversed");
     }
 
     @Transactional(readOnly = true)
