@@ -332,6 +332,30 @@ for up to the 5-minute TTL.
 - **Local stack:** `docker compose --profile monitoring up -d` → Grafana on :3000 with the provisioned
   "FinFlow overview" dashboard, Prometheus on :9090, Jaeger on :16686.
 
+## 11. Deployment view
+
+**Not deployed publicly.** This is the target topology, verified locally with
+`deploy/docker-compose.prod.yml` (see [PROJECT_GUIDE.md §15](PROJECT_GUIDE.md#15-deployment)).
+
+```mermaid
+flowchart LR
+    User["Browser"] -->|"HTTPS :443"| Caddy["Caddy<br/>automatic TLS, HSTS<br/>404 for /api/ops, /actuator"]
+    subgraph VM["Single VM (Docker Compose)"]
+        subgraph Edge["edge network"]
+            Caddy --> Web["frontend<br/>nginx: SPA + /api proxy, CSP"]
+        end
+        subgraph Internal["internal network (no internet)"]
+            Web --> BE["backend<br/>API + outbox + consumers + workers"]
+            BE --> PG[("PostgreSQL<br/>volume")]
+            BE --> KF[("Kafka<br/>volume")]
+            BE --> RD[("Redis")]
+        end
+    end
+    GH["GitHub Actions"] -->|"CI: tests, gitleaks,<br/>multi-arch images"| GHCR[("GHCR")]
+    GH -->|"manual Deploy workflow:<br/>SSH → backup, pull, up, smoke test, rollback"| VM
+    GHCR -->|"docker pull"| VM
+```
+
 ## Known limitations
 
 - One provider (the simulator); no routing or failover between providers.

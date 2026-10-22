@@ -1,0 +1,51 @@
+name: Deploy
+
+# Manual only. Deploys images already built and pushed by CI to a single VM over SSH.
+# Required repository secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS.
+# The server needs Docker and /opt/finflow/.env.production (see deploy/.env.production.example).
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (full commit SHA from CI, or 'latest')"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Check deployment secrets
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "::error::DEPLOY_HOST is not configured. See docs/PROJECT_GUIDE.md (Deployment)."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - name: Configure SSH
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Upload deployment files
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+        run: scp -i ~/.ssh/id_deploy deploy/docker-compose.prod.yml deploy/Caddyfile deploy/deploy.sh "$TARGET:/opt/finflow/"
+      - name: Deploy and smoke test
+        env:
+          TARGET: ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}
+          TAG: ${{ inputs.image_tag }}
+        run: ssh -i ~/.ssh/id_deploy "$TARGET" "/opt/finflow/deploy.sh '$TAG'"

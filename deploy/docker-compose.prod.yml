@@ -1,0 +1,126 @@
+# Production-style single-host deployment: Caddy (automatic HTTPS) -> frontend nginx -> backend,
+# with PostgreSQL, Kafka and Redis on a private network. Only ports 80/443 are published.
+#
+#   cp .env.production.example .env.production   # fill in real values, never commit
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# Sized for a 2 vCPU / 4+ GB VM. Images come from GHCR (built by CI); FINFLOW_IMAGE_TAG pins a release.
+name: finflow-prod
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      FINFLOW_DOMAIN: ${FINFLOW_DOMAIN:?set FINFLOW_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [frontend]
+    networks: [edge]
+    deploy: { resources: { limits: { cpus: "0.5", memory: 128M } } }
+
+  frontend:
+    image: ghcr.io/jain-saksham/finflow-frontend:${FINFLOW_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8080
+      TRUSTED_PROXY_CIDR: 172.30.0.0/24   # the edge network below: only Caddy can set the client IP
+    depends_on:
+      backend: { condition: service_healthy }
+    networks: [edge, internal]
+    deploy: { resources: { limits: { cpus: "0.5", memory: 64M } } }
+
+  backend:
+    image: ghcr.io/jain-saksham/finflow-backend:${FINFLOW_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/finflow
+      DB_USERNAME: ${DB_USERNAME:?set DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      DB_POOL_SIZE: 15
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_URL: redis://redis:6379
+      FINFLOW_CORS_ALLOWED_ORIGINS: https://${FINFLOW_DOMAIN}
+      FINFLOW_FORWARD_HEADERS_STRATEGY: framework   # reachable only through Caddy -> nginx
+      FINFLOW_OPS_TOKEN: ${FINFLOW_OPS_TOKEN:?set FINFLOW_OPS_TOKEN}
+      FINFLOW_DEMO_ENABLED: "true"
+      FINFLOW_DEMO_API_KEY: ${FINFLOW_DEMO_API_KEY:?set FINFLOW_DEMO_API_KEY}
+      FINFLOW_DEMO_RESET_CRON: ${FINFLOW_DEMO_RESET_CRON:-0 0 4 * * *}
+      FINFLOW_RECONCILIATION_STALE_AFTER: 30s
+      FINFLOW_LOG_FORMAT: ecs
+      FINFLOW_TRACING_SAMPLING: "0.1"
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [internal]
+    deploy: { resources: { limits: { cpus: "1.5", memory: 768M } } }
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: finflow
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d finflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [internal]
+    deploy: { resources: { limits: { cpus: "1", memory: 512M } } }
+
+  kafka:
+    image: apache/kafka-native:4.2.2
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:29092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_RETENTION_HOURS: 72
+    volumes: [kafkadata:/var/lib/kafka/data]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 29092"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [internal]
+    deploy: { resources: { limits: { cpus: "1", memory: 512M } } }
+
+  redis:
+    image: redis:8.6-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+    deploy: { resources: { limits: { cpus: "0.25", memory: 96M } } }
+
+networks:
+  edge:
+    ipam: { config: [{ subnet: 172.30.0.0/24 }] }
+  internal:
+    internal: true   # no route to the internet: data services are unreachable from outside
+
+volumes:
+  pgdata:
+  kafkadata:
+  caddy-data:
+  caddy-config:

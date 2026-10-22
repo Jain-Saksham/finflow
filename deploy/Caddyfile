@@ -1,0 +1,16 @@
+# Caddy obtains and renews a Let's Encrypt certificate for the domain automatically.
+{$FINFLOW_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	# Operator endpoints are not served publicly at all; use them over SSH on the host instead
+	# (docker compose exec backend wget ... or an SSH tunnel).
+	@ops path /api/ops/*
+	respond @ops 404
+	# Metrics stay internal too.
+	@actuator path /actuator/*
+	respond @actuator 404
+	reverse_proxy frontend:8080
+}

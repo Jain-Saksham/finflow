@@ -51,7 +51,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         RateLimiter.Decision decision;
         if (auth != null && auth.getPrincipal() instanceof MerchantPrincipal merchant) {
-            String subject = merchant.merchantId().toString();
+            // Everyone shares the public demo merchant, so its budget is split per visitor (client IP);
+            // otherwise one visitor could exhaust it for all the others.
+            String subject = merchant.demo()
+                    ? merchant.merchantId() + ":" + request.getRemoteAddr()
+                    : merchant.merchantId().toString();
             decision = limiter.check("merchant", subject, properties.requestsPerMinute(), MINUTE);
             if (decision.allowed() && !"GET".equals(request.getMethod())) {
                 decision = limiter.check("merchant-writes", subject, properties.writesPerMinute(), MINUTE);

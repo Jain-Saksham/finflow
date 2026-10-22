@@ -2,6 +2,7 @@ package com.finflow.ops;
 
 import com.finflow.common.error.ApiException;
 import com.finflow.common.web.PageResponse;
+import com.finflow.demo.DemoResetService;
 import com.finflow.events.DeadLetterStore;
 import com.finflow.ledger.LedgerService;
 import com.finflow.outbox.OutboxStore;
@@ -44,15 +45,24 @@ public class OpsController {
     private final JdbcTemplate jdbc;
     private final LedgerService ledger;
     private final ReconciliationService reconciliation;
+    private final DemoResetService demoReset;
 
     public OpsController(DeadLetterStore deadLetters, KafkaTemplate<String, String> kafka, OutboxStore outbox,
-                         JdbcTemplate jdbc, LedgerService ledger, ReconciliationService reconciliation) {
+                         JdbcTemplate jdbc, LedgerService ledger, ReconciliationService reconciliation,
+                         DemoResetService demoReset) {
         this.deadLetters = deadLetters;
         this.kafka = kafka;
         this.outbox = outbox;
         this.jdbc = jdbc;
         this.ledger = ledger;
         this.reconciliation = reconciliation;
+        this.demoReset = demoReset;
+    }
+
+    /** Deletes and re-seeds the demo merchant's data only; see DemoResetService for the guards. */
+    @PostMapping("/demo/reset")
+    public Map<String, Object> resetDemo() {
+        return demoReset.reset();
     }
 
     @GetMapping("/dead-letters")

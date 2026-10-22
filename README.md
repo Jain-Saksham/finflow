@@ -9,15 +9,20 @@ crash), capture or void authorizations, issue partial and full refunds, and insp
 double-entry ledger, signed webhook deliveries with retries, and reconciliation reports against the provider's
 independent records, with a live dashboard computed from stored data.
 
-**Status: Phase 2 (reliability).** Phase 1 MVP plus durable idempotency, a database-enforced ledger, transactional
-outbox → Kafka, webhooks, reconciliation, Redis (rate limits/caches), metrics/tracing and load tests.
-Deployment is Phase 3.
+**Status:** feature-complete through Phase 3 (containers, CI, deployment tooling, docs). **There is no public live
+demo yet:** the deployment is fully scripted and was verified locally over HTTPS, but no host has been provisioned.
 
 | Document | Contents |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, sequence diagrams, delivery guarantees, ledger model, failure scenarios |
-| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Runbook: Kafka/Redis outages, dead-letter replay, ledger corrections, reconciliation |
+| [docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md) | Developer guide: requirements, design, schema, idempotency, ledger, Kafka, security, setup, deployment, performance |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Mermaid diagrams: components, payment sequence, outbox flow, refunds and ledger, reconciliation, failures, deployment |
+| [docs/OPERATIONS.md](docs/OPERATIONS.md) | Runbook: Kafka/Redis outages, dead-letter replay, ledger corrections, demo reset |
+| [docs/INTERVIEW_QUESTIONS.md](docs/INTERVIEW_QUESTIONS.md) | 45 interview questions with answers tied to this code |
+| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | Five-minute walkthrough |
+| [docs/RESUME_BULLETS.md](docs/RESUME_BULLETS.md) | Measured, honest resume bullets |
 | [loadtest/README.md](loadtest/README.md) | k6 workload and measured results |
+
+![Dashboard](docs/screenshots/02-dashboard.png)
 
 | | |
 |---|---|
@@ -48,6 +53,9 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm install && npm run dev
 ```
 
+Or run everything in containers (backend and frontend images built locally): `docker compose --profile app up -d --build`
+and open http://localhost:8081.
+
 Open http://localhost:5173 and click **Enter demo merchant**. Demo data is generated in the background during the
 first ~15 seconds after startup (orders, payments, refunds, webhook deliveries, three injected provider anomalies and
 an initial reconciliation run). The dashboard refreshes itself.
@@ -60,7 +68,7 @@ an initial reconciliation run). The dashboard refreshes itself.
 ### Tests
 
 ```bash
-cd backend && ./mvnw test      # 101 tests: unit + integration (needs Docker: starts PostgreSQL, Kafka, Redis)
+cd backend && ./mvnw test      # 103 tests: 46 unit + 57 integration (needs Docker: starts PostgreSQL, Kafka, Redis)
 cd frontend && npm test        # money parsing/formatting unit tests
 cd frontend && npm run build   # type-check + production build
 ```
@@ -209,7 +217,8 @@ curl -s -X POST $API/payments/$PAYMENT/void -H "X-API-Key: $KEY"
 
 ## Tests
 
-101 backend tests (`./mvnw test`) and 19 frontend tests. Highlights:
+103 backend tests (`./mvnw test`) and 19 frontend tests, run by GitHub Actions on every push together with a gitleaks
+secret scan and multi-arch image builds. Highlights:
 
 | Kind | What it covers |
 |---|---|
@@ -222,8 +231,23 @@ curl -s -X POST $API/payments/$PAYMENT/void -H "X-API-Key: $KEY"
 
 ---
 
+## Deployment
+
+Target: one VM running [deploy/docker-compose.prod.yml](deploy/docker-compose.prod.yml) behind Caddy (automatic HTTPS),
+deployed by the manual [Deploy workflow](.github/workflows/deploy.yml) (backup → pull → up → smoke test → automatic
+rollback). Free-tier research, steps, migrations/rollback and the demo-reset guarantees are in
+[docs/PROJECT_GUIDE.md §15](docs/PROJECT_GUIDE.md#15-deployment). **Not deployed publicly yet.**
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Payment simulator](docs/screenshots/03-payment-simulator.png) | ![Payment detail](docs/screenshots/04-payment-detail.png) |
+| ![Webhook delivery](docs/screenshots/07-webhook-delivery.png) | ![Reconciliation](docs/screenshots/08-reconciliation.png) |
+
 ## Known limitations
 
+- No public deployment yet (see Deployment).
 - Single simulated provider; no provider routing/failover. The provider's records live in the same PostgreSQL
   instance (separate schema, independent transactions), not a separate system.
 - Outbox publisher, consumers and webhook worker run inside the API process; not packaged as a separate worker.

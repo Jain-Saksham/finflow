@@ -81,14 +81,26 @@ public class DemoDataSeeder {
         }
         Merchant merchant = demoAccount.initialize();
         log.info("Demo merchant ready: {} ({})", merchant.getName(), merchant.getId());
-        // Also for databases seeded before webhooks existed: the demo always has a receiver to watch.
-        if (webhooks.list(merchant.getId()).isEmpty()) {
-            webhooks.create(merchant.getId(), null, SimulatedBehavior.FAIL_FIRST_ATTEMPT,
-                    "Built-in simulated receiver (fails the first attempt of every event)");
-        }
+        ensureWebhookEndpoint(merchant.getId());
         if (properties.seed() && orders.countByMerchantId(merchant.getId()) == 0) {
             // Provider calls have simulated latency; seed in the background so startup stays fast.
             Thread.ofVirtual().name("demo-seeder").start(() -> seed(merchant.getId()));
+        }
+    }
+
+    /** Also for databases seeded before webhooks existed: the demo always has a receiver to watch. */
+    private void ensureWebhookEndpoint(UUID merchantId) {
+        if (webhooks.list(merchantId).isEmpty()) {
+            webhooks.create(merchantId, null, SimulatedBehavior.FAIL_FIRST_ATTEMPT,
+                    "Built-in simulated receiver (fails the first attempt of every event)");
+        }
+    }
+
+    /** After a demo reset: recreate the endpoint and seed synchronously. */
+    void reseed(UUID merchantId) {
+        ensureWebhookEndpoint(merchantId);
+        if (properties.seed()) {
+            seed(merchantId);
         }
     }
 

@@ -152,6 +152,8 @@ finflow:
     enabled: ${FINFLOW_DEMO_ENABLED:true}
     seed: ${FINFLOW_DEMO_SEED:true}
     api-key: ${FINFLOW_DEMO_API_KEY:}
+    # Optional cron (UTC) to wipe and re-seed the demo merchant, e.g. "0 0 4 * * *". "-" = never.
+    reset-cron: ${FINFLOW_DEMO_RESET_CRON:-}
   simulator:
     latency-ms: ${FINFLOW_SIMULATOR_LATENCY_MS:120}
     timeout-ms: ${FINFLOW_SIMULATOR_TIMEOUT_MS:1500}
